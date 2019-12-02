@@ -280,11 +280,14 @@ func (a *Array) ZeroExpr() string {
 func (a *Array) IfZeroExpr() string {
 	sz := a.sz()
 
-	res := "true"
+	var res string
 	for i := 0; i < sz; i++ {
 		el := a.Els.Copy()
 		el.SetVarname(fmt.Sprintf("%s[%d]", a.Varname(), i))
-		res += " && (" + el.IfZeroExpr() + ")"
+		if res != "" {
+			res += " && "
+		}
+		res += "(" + el.IfZeroExpr() + ")"
 	}
 	return res
 }
@@ -492,14 +495,18 @@ func (s *Struct) IfZeroExpr() string {
 	if s.alias == "" {
 		return "" // structs with no names not supported (for now)
 	}
-	res := "true"
+
+	var res string
 	for i := range s.Fields {
 		if !ast.IsExported(s.Fields[i].FieldName) {
 			continue
 		}
 
 		fieldZero := s.Fields[i].FieldElem.IfZeroExpr()
-		res += " && (" + fieldZero + ")"
+		if res != "" {
+			res += " && "
+		}
+		res += "(" + fieldZero + ")"
 	}
 	return res
 }
