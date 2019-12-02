@@ -287,6 +287,7 @@ func (fs *FileSet) getTypeSpecs(f *ast.File) {
 					case *ast.StructType,
 						*ast.ArrayType,
 						*ast.StarExpr,
+						*ast.SelectorExpr,
 						*ast.MapType,
 						*ast.Ident:
 						fs.Specs[ts.Name.Name] = ts.Type
