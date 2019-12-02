@@ -36,11 +36,13 @@ func (m Method) String() string {
 		return "unmarshal"
 	case Size:
 		return "size"
+	case IsZero:
+		return "iszero"
 	case Test:
 		return "test"
 	default:
 		// return e.g. "marshal+unmarshal+test"
-		modes := [...]Method{Marshal, Unmarshal, Size, Test}
+		modes := [...]Method{Marshal, Unmarshal, Size, IsZero, Test}
 		any := false
 		nm := ""
 		for _, mm := range modes {
@@ -66,6 +68,8 @@ func strtoMeth(s string) Method {
 		return Unmarshal
 	case "size":
 		return Size
+	case "iszero":
+		return IsZero
 	case "test":
 		return Test
 	default:
@@ -77,6 +81,7 @@ const (
 	Marshal     Method                       = 1 << iota // msgp.Marshaler
 	Unmarshal                                            // msgp.Unmarshaler
 	Size                                                 // msgp.Sizer
+	IsZero                                               // implement MsgIsZero()
 	Test                                                 // generate tests
 	invalidmeth                                          // this isn't a method
 	marshaltest = Marshal | Unmarshal | Test             // tests for Marshaler and Unmarshaler
@@ -99,6 +104,9 @@ func NewPrinter(m Method, out io.Writer, tests io.Writer) *Printer {
 	}
 	if m.isset(Size) {
 		gens = append(gens, sizes(out))
+	}
+	if m.isset(IsZero) {
+		gens = append(gens, isZeros(out))
 	}
 	if m.isset(marshaltest) {
 		gens = append(gens, mtest(tests))
