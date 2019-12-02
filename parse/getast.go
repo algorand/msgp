@@ -383,7 +383,7 @@ func (fs *FileSet) getField(f *ast.Field) []gen.StructField {
 		return sf
 	}
 	sf[0].FieldElem = ex
-	if sf[0].FieldTag == "" {
+	if sf[0].FieldTagParts == nil {
 		sf[0].FieldTag = sf[0].FieldName
 		sf[0].FieldTagParts = []string{sf[0].FieldName}
 	}

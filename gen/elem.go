@@ -463,6 +463,16 @@ func (s *Struct) AnyHasTagPart(pname string) bool {
 	return false
 }
 
+// UnderscoreStructHasTagPart returns true if HasTagPart(p) is true for the _struct field.
+func (s *Struct) UnderscoreStructHasTagPart(pname string) bool {
+	for _, sf := range s.Fields {
+		if sf.FieldName == "_struct" && sf.HasTagPart(pname) {
+			return true
+		}
+	}
+	return false
+}
+
 type StructField struct {
 	FieldTag      string   // the string inside the `codec:""` tag up to the first comma
 	FieldTagParts []string // the string inside the `codec:""` tag split by commas

@@ -130,7 +130,8 @@ func (m *marshalGen) mapstruct(s *Struct) {
 			if !m.p.ok() {
 				return
 			}
-			if ize := sf.FieldElem.IfZeroExpr(); ize != "" && sf.HasTagPart("omitempty") {
+			fieldOmitEmpty := sf.HasTagPart("omitempty") || s.UnderscoreStructHasTagPart("omitempty")
+			if ize := sf.FieldElem.IfZeroExpr(); ize != "" && fieldOmitEmpty {
 				m.p.printf("\nif %s {", ize)
 				m.p.printf("\n%s--", fieldNVar)
 				m.p.printf("\n%s", bm.setStmt(i))
