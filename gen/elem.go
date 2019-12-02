@@ -665,7 +665,6 @@ func (s *BaseElem) ZeroExpr() string {
 		return "(time.Time{})"
 	}
 
-	panic(fmt.Sprintf("unsupported ZeroExpr of %v", s))
 	return ""
 }
 
@@ -673,7 +672,9 @@ func (s *BaseElem) ZeroExpr() string {
 func (s *BaseElem) IfZeroExpr() string {
 	z := s.ZeroExpr()
 	if z == "" {
-		return ""
+		// Assume this is an identifier from another package,
+		// and that it has generated code for MsgIsZero.
+		return s.Varname() + ".MsgIsZero()"
 	}
 	return s.Varname() + " == " + z
 }
