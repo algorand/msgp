@@ -121,15 +121,28 @@ func (m *marshalGen) mapstruct(s *Struct) {
 	var fieldNVar string
 	if omitempty {
 
+		exportedFields := 0
+		for _, sf := range s.Fields {
+			if !ast.IsExported(sf.FieldName) {
+				continue
+			}
+			exportedFields++
+		}
+
 		fieldNVar = oeIdentPrefix + "Len"
 
 		m.p.printf("\n// omitempty: check for empty values")
-		m.p.printf("\n%s := uint32(%d)", fieldNVar, nfields)
+		m.p.printf("\n%s := uint32(%d)", fieldNVar, exportedFields)
 		m.p.printf("\n%s", bm.typeDecl())
 		for i, sf := range s.Fields {
 			if !m.p.ok() {
 				return
 			}
+
+			if !ast.IsExported(s.Fields[i].FieldName) {
+				continue
+			}
+
 			fieldOmitEmpty := sf.HasTagPart("omitempty") || s.UnderscoreStructHasTagPart("omitempty")
 			if ize := sf.FieldElem.IfZeroExpr(); ize != "" && fieldOmitEmpty {
 				m.p.printf("\nif %s {", ize)
@@ -172,8 +185,10 @@ func (m *marshalGen) mapstruct(s *Struct) {
 			return
 		}
 
+		fieldOmitEmpty := s.Fields[i].HasTagPart("omitempty") || s.UnderscoreStructHasTagPart("omitempty")
+
 		// if field is omitempty, wrap with if statement based on the emptymask
-		oeField := s.Fields[i].HasTagPart("omitempty") && s.Fields[i].FieldElem.IfZeroExpr() != ""
+		oeField := fieldOmitEmpty && s.Fields[i].FieldElem.IfZeroExpr() != ""
 		if oeField {
 			m.p.printf("\nif %s == 0 { // if not empty", bm.readExpr(i))
 		}
