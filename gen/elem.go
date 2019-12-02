@@ -245,6 +245,20 @@ func (a *Array) Copy() Elem {
 
 func (a *Array) Complexity() int { return 1 + a.Els.Complexity() }
 
+func (a *Array) sz() int {
+	szString := a.SizeHint
+	if szString == "" {
+		szString = a.Size
+	}
+
+	s, err := strconv.Atoi(szString)
+	if err != nil {
+		panic(err)
+	}
+
+	return s
+}
+
 // ZeroExpr returns the zero/empty expression or empty string if not supported.
 func (a *Array) ZeroExpr() string {
 	zeroElem := a.Els.ZeroExpr()
@@ -252,15 +266,7 @@ func (a *Array) ZeroExpr() string {
 		return ""
 	}
 
-	szString := a.SizeHint
-	if szString == "" {
-		szString = a.Size
-	}
-
-	sz, err := strconv.Atoi(szString)
-	if err != nil {
-		panic(err)
-	}
+	sz := a.sz()
 
 	res := fmt.Sprintf("%s{", a.TypeName())
 	for i := 0; i < sz; i++ {
@@ -271,7 +277,17 @@ func (a *Array) ZeroExpr() string {
 }
 
 // IfZeroExpr returns the expression to compare to zero/empty.
-func (a *Array) IfZeroExpr() string { return a.Varname() + " == " + a.ZeroExpr() }
+func (a *Array) IfZeroExpr() string {
+	sz := a.sz()
+
+	res := "true"
+	for i := 0; i < sz; i++ {
+		el := a.Els.Copy()
+		el.SetVarname(fmt.Sprintf("%s[%d]", a.Varname(), i))
+		res += " && (" + el.IfZeroExpr() + ")"
+	}
+	return res
+}
 
 // Map is a map[string]Elem
 type Map struct {
