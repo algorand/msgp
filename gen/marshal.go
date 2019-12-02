@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/ast"
 	"io"
+	"sort"
 	"strings"
 
 	"github.com/zeldovich/msgp/msgp"
@@ -108,10 +109,13 @@ func (m *marshalGen) tuple(s *Struct) {
 
 func (m *marshalGen) mapstruct(s *Struct) {
 
+	sortedFields := append([]StructField(nil), s.Fields...)
+	sort.Sort(byFieldTag(sortedFields))
+
 	oeIdentPrefix := randIdent()
 
 	var data []byte
-	nfields := len(s.Fields)
+	nfields := len(sortedFields)
 	bm := bmask{
 		bitlen:  nfields,
 		varname: oeIdentPrefix + "Mask",
@@ -122,7 +126,7 @@ func (m *marshalGen) mapstruct(s *Struct) {
 	if omitempty {
 
 		exportedFields := 0
-		for _, sf := range s.Fields {
+		for _, sf := range sortedFields {
 			if !ast.IsExported(sf.FieldName) {
 				continue
 			}
@@ -134,12 +138,12 @@ func (m *marshalGen) mapstruct(s *Struct) {
 		m.p.printf("\n// omitempty: check for empty values")
 		m.p.printf("\n%s := uint32(%d)", fieldNVar, exportedFields)
 		m.p.printf("\n%s", bm.typeDecl())
-		for i, sf := range s.Fields {
+		for i, sf := range sortedFields {
 			if !m.p.ok() {
 				return
 			}
 
-			if !ast.IsExported(s.Fields[i].FieldName) {
+			if !ast.IsExported(sf.FieldName) {
 				continue
 			}
 
@@ -167,17 +171,17 @@ func (m *marshalGen) mapstruct(s *Struct) {
 
 		// non-omitempty version
 		data = make([]byte, 0, 64)
-		data = msgp.AppendMapHeader(data, uint32(len(s.Fields)))
-		m.p.printf("\n// map header, size %d", len(s.Fields))
+		data = msgp.AppendMapHeader(data, uint32(len(sortedFields)))
+		m.p.printf("\n// map header, size %d", len(sortedFields))
 		m.Fuse(data)
-		if len(s.Fields) == 0 {
+		if len(sortedFields) == 0 {
 			m.fuseHook()
 		}
 
 	}
 
-	for i := range s.Fields {
-		if !ast.IsExported(s.Fields[i].FieldName) {
+	for i, sf := range sortedFields {
+		if !ast.IsExported(sf.FieldName) {
 			continue
 		}
 
@@ -185,22 +189,22 @@ func (m *marshalGen) mapstruct(s *Struct) {
 			return
 		}
 
-		fieldOmitEmpty := s.Fields[i].HasTagPart("omitempty") || s.UnderscoreStructHasTagPart("omitempty")
+		fieldOmitEmpty := sf.HasTagPart("omitempty") || s.UnderscoreStructHasTagPart("omitempty")
 
 		// if field is omitempty, wrap with if statement based on the emptymask
-		oeField := fieldOmitEmpty && s.Fields[i].FieldElem.IfZeroExpr() != ""
+		oeField := fieldOmitEmpty && sf.FieldElem.IfZeroExpr() != ""
 		if oeField {
 			m.p.printf("\nif %s == 0 { // if not empty", bm.readExpr(i))
 		}
 
-		data = msgp.AppendString(nil, s.Fields[i].FieldTag)
+		data = msgp.AppendString(nil, sf.FieldTag)
 
-		m.p.printf("\n// string %q", s.Fields[i].FieldTag)
+		m.p.printf("\n// string %q", sf.FieldTag)
 		m.Fuse(data)
 		m.fuseHook()
 
-		m.ctx.PushString(s.Fields[i].FieldName)
-		next(m, s.Fields[i].FieldElem)
+		m.ctx.PushString(sf.FieldName)
+		next(m, sf.FieldElem)
 		m.ctx.Pop()
 
 		if oeField {

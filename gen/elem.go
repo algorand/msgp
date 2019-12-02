@@ -515,6 +515,12 @@ type StructField struct {
 	FieldElem     Elem     // the field type
 }
 
+type byFieldTag []StructField
+
+func (a byFieldTag) Len() int           { return len(a) }
+func (a byFieldTag) Less(i, j int) bool { return a[i].FieldTag < a[j].FieldTag }
+func (a byFieldTag) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+
 // HasTagPart returns true if the specified tag part (option) is present.
 func (sf *StructField) HasTagPart(pname string) bool {
 	if len(sf.FieldTagParts) < 2 {
