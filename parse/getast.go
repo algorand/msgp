@@ -528,9 +528,22 @@ func (fs *FileSet) parseExpr(e ast.Expr) gen.Elem {
 				}
 
 			case *ast.Ident:
+				sizeHint := ""
+				if s.Obj != nil && s.Obj.Kind == ast.Con {
+					switch d := s.Obj.Decl.(type) {
+					case *ast.ValueSpec:
+						if len(d.Names) == 1 {
+							switch v := d.Values[0].(type) {
+							case *ast.BasicLit:
+								sizeHint = v.Value
+							}
+						}
+					}
+				}
 				return &gen.Array{
-					Size: s.String(),
-					Els:  els,
+					Size:     s.String(),
+					SizeHint: sizeHint,
+					Els:      els,
 				}
 
 			case *ast.SelectorExpr:

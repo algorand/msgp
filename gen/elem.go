@@ -208,9 +208,10 @@ func Ident(id string) *BaseElem {
 
 type Array struct {
 	common
-	Index string // index variable name
-	Size  string // array size
-	Els   Elem   // child
+	Index    string // index variable name
+	Size     string // array size
+	SizeHint string // const object referred to by Size
+	Els      Elem   // child
 }
 
 func (a *Array) SetVarname(s string) {
