@@ -290,7 +290,7 @@ func (m *Map) Complexity() int { return 2 + m.Value.Complexity() }
 func (m *Map) ZeroExpr() string { return "nil" }
 
 // IfZeroExpr returns the expression to compare to zero/empty.
-func (m *Map) IfZeroExpr() string { return m.Varname() + " == nil" }
+func (m *Map) IfZeroExpr() string { return "len(" + m.Varname() + ") == 0" }
 
 type Slice struct {
 	common
@@ -331,7 +331,7 @@ func (s *Slice) Complexity() int {
 func (s *Slice) ZeroExpr() string { return "nil" }
 
 // IfZeroExpr returns the expression to compare to zero/empty.
-func (s *Slice) IfZeroExpr() string { return s.Varname() + " == nil" }
+func (s *Slice) IfZeroExpr() string { return "len(" + s.Varname() + ") == 0" }
 
 type Ptr struct {
 	common
@@ -663,9 +663,9 @@ func (s *BaseElem) ZeroExpr() string {
 
 	case Time:
 		return "(time.Time{})"
-
 	}
 
+	panic(fmt.Sprintf("unsupported ZeroExpr of %v", s))
 	return ""
 }
 
