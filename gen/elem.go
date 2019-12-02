@@ -276,10 +276,10 @@ func (a *Array) IfZeroExpr() string { return a.Varname() + " == " + a.ZeroExpr()
 // Map is a map[string]Elem
 type Map struct {
 	common
-	Keyidx string // key variable name
+	Keyidx  string // key variable name
 	Keytype string // type of map key
-	Validx string // value variable name
-	Value  Elem   // value element
+	Validx  string // value variable name
+	Value   Elem   // value element
 }
 
 func (m *Map) SetVarname(s string) {

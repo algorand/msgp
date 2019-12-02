@@ -17,6 +17,7 @@ import (
 type FileSet struct {
 	Package    string              // package name
 	Specs      map[string]ast.Expr // type specs in file
+	Aliases    map[string]ast.Expr // type aliases in file
 	Consts     map[string]ast.Expr // consts
 	Identities map[string]gen.Elem // processed from specs
 	Directives []string            // raw preprocessor directives
@@ -70,6 +71,7 @@ func packageToFileSet(p *packages.Package, imps map[string]*FileSet, unexported 
 	fs := &FileSet{
 		Package:    p.Name,
 		Specs:      make(map[string]ast.Expr),
+		Aliases:    make(map[string]ast.Expr),
 		Consts:     make(map[string]ast.Expr),
 		Identities: make(map[string]gen.Elem),
 		ImportSet:  imps,
@@ -319,8 +321,12 @@ func (fs *FileSet) getTypeSpecs(f *ast.File) {
 						*ast.SelectorExpr,
 						*ast.MapType,
 						*ast.Ident:
-						fs.Specs[s.Name.Name] = s.Type
 
+						if s.Assign == 0 {
+							fs.Specs[s.Name.Name] = s.Type
+						} else {
+							fs.Aliases[s.Name.Name] = s.Type
+						}
 					}
 
 				case *ast.ValueSpec:
@@ -398,10 +404,15 @@ func (fs *FileSet) getField(f *ast.Field) []gen.StructField {
 	switch len(f.Names) {
 	case 0:
 		if flatten {
-			return fs.getFieldsFromEmbeddedStruct(f.Type)
-		} else {
-			sf[0].FieldName = embedded(f.Type)
+			maybe := fs.getFieldsFromEmbeddedStruct(f.Type)
+			if maybe != nil {
+				return maybe
+			}
 		}
+
+		// If not flattening, or the embedded type wasn't a struct,
+		// embed it under the type name.
+		sf[0].FieldName = embedded(f.Type)
 	case 1:
 		sf[0].FieldName = f.Names[0].Name
 	default:
@@ -446,7 +457,11 @@ func (fs *FileSet) getField(f *ast.Field) []gen.StructField {
 func (fs *FileSet) getFieldsFromEmbeddedStruct(f ast.Expr) []gen.StructField {
 	switch f := f.(type) {
 	case *ast.Ident:
-		s := fs.Specs[f.Name]
+		s, ok := fs.Specs[f.Name]
+		if !ok {
+			s = fs.Aliases[f.Name]
+		}
+
 		switch s := s.(type) {
 		case *ast.StructType:
 			return fs.parseFieldList(s.Fields)
@@ -532,7 +547,9 @@ func (fs *FileSet) parseExpr(e ast.Expr) gen.Elem {
 		// can be done later, once we've resolved
 		// everything else.
 		if b.Value == gen.IDENT {
-			if _, ok := fs.Specs[e.Name]; !ok {
+			_, specOK := fs.Specs[e.Name]
+			_, aliasOK := fs.Aliases[e.Name]
+			if !specOK && !aliasOK {
 				warnf("non-local identifier: %s\n", e.Name)
 			}
 		}
