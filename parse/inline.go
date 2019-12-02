@@ -148,7 +148,13 @@ func (f *FileSet) nextInline(ref *gen.Elem, root string) {
 				// this is the point at which we're sure that
 				// we've got a type that isn't a primitive,
 				// a library builtin, or a processed type
-				warnf("unresolved identifier: %s\n", typ)
+
+				// we correctly handle this case by forwarding
+				// methods to the unresolved identifier; the
+				// code will fail to compile if the requisite
+				// methods aren't available for that type.
+
+				// warnf("unresolved identifier: %s\n", typ)
 			}
 		}
 	case *gen.Struct:
