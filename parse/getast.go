@@ -10,8 +10,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/zeldovich/msgp/gen"
 	"github.com/ttacon/chalk"
+	"github.com/zeldovich/msgp/gen"
 )
 
 // A FileSet is the in-memory representation of a

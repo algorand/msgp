@@ -74,7 +74,7 @@ func strtoMeth(s string) Method {
 }
 
 const (
-	Marshal     Method = 1 << iota                                   // msgp.Marshaler
+	Marshal     Method                       = 1 << iota // msgp.Marshaler
 	Unmarshal                                            // msgp.Unmarshaler
 	Size                                                 // msgp.Sizer
 	Test                                                 // generate tests

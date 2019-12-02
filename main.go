@@ -29,10 +29,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/ttacon/chalk"
 	"github.com/zeldovich/msgp/gen"
 	"github.com/zeldovich/msgp/parse"
 	"github.com/zeldovich/msgp/printer"
-	"github.com/ttacon/chalk"
 )
 
 var (
