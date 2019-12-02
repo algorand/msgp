@@ -3,15 +3,13 @@ package parse
 import (
 	"fmt"
 	"go/ast"
-	"go/parser"
-	"go/token"
-	"os"
 	"reflect"
 	"sort"
 	"strings"
 
 	"github.com/ttacon/chalk"
 	"github.com/zeldovich/msgp/gen"
+	"golang.org/x/tools/go/packages"
 )
 
 // A FileSet is the in-memory representation of a
@@ -38,45 +36,34 @@ func File(name string, unexported bool) (*FileSet, error) {
 		Identities: make(map[string]gen.Elem),
 	}
 
-	fset := token.NewFileSet()
-	finfo, err := os.Stat(name)
+	cfg := &packages.Config{
+		Mode: packages.NeedName | packages.NeedImports | packages.NeedDeps | packages.NeedSyntax,
+	}
+
+	pkgs, err := packages.Load(cfg, name)
 	if err != nil {
 		return nil, err
 	}
-	if finfo.IsDir() {
-		pkgs, err := parser.ParseDir(fset, name, nil, parser.ParseComments)
-		if err != nil {
-			return nil, err
-		}
-		if len(pkgs) != 1 {
-			return nil, fmt.Errorf("multiple packages in directory: %s", name)
-		}
-		var one *ast.Package
-		for _, nm := range pkgs {
-			one = nm
-			break
-		}
-		fs.Package = one.Name
-		for _, fl := range one.Files {
-			pushstate(fl.Name.Name)
-			fs.Directives = append(fs.Directives, yieldComments(fl.Comments)...)
-			if !unexported {
-				ast.FileExports(fl)
-			}
-			fs.getTypeSpecs(fl)
-			popstate()
-		}
-	} else {
-		f, err := parser.ParseFile(fset, name, nil, parser.ParseComments)
-		if err != nil {
-			return nil, err
-		}
-		fs.Package = f.Name.Name
-		fs.Directives = yieldComments(f.Comments)
+
+	if len(pkgs) != 1 {
+		return nil, fmt.Errorf("multiple packages in directory: %s", name)
+	}
+
+	var one *packages.Package
+	for _, nm := range pkgs {
+		one = nm
+		break
+	}
+
+	fs.Package = one.Name
+	for _, fl := range one.Syntax {
+		pushstate(fl.Name.Name)
+		fs.Directives = append(fs.Directives, yieldComments(fl.Comments)...)
 		if !unexported {
-			ast.FileExports(f)
+			ast.FileExports(fl)
 		}
-		fs.getTypeSpecs(f)
+		fs.getTypeSpecs(fl)
+		popstate()
 	}
 
 	if len(fs.Specs) == 0 {
