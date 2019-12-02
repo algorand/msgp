@@ -29,9 +29,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/tinylib/msgp/gen"
-	"github.com/tinylib/msgp/parse"
-	"github.com/tinylib/msgp/printer"
+	"github.com/zeldovich/msgp/gen"
+	"github.com/zeldovich/msgp/parse"
+	"github.com/zeldovich/msgp/printer"
 	"github.com/ttacon/chalk"
 )
 
