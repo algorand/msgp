@@ -464,8 +464,8 @@ func (s *Struct) AnyHasTagPart(pname string) bool {
 }
 
 type StructField struct {
-	FieldTag      string   // the string inside the `msg:""` tag up to the first comma
-	FieldTagParts []string // the string inside the `msg:""` tag split by commas
+	FieldTag      string   // the string inside the `codec:""` tag up to the first comma
+	FieldTagParts []string // the string inside the `codec:""` tag split by commas
 	RawTag        string   // the full struct tag
 	FieldName     string   // the name of the struct field
 	FieldElem     Elem     // the field type

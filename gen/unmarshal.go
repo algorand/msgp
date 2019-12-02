@@ -1,6 +1,7 @@
 package gen
 
 import (
+	"go/ast"
 	"io"
 	"strconv"
 )
@@ -102,6 +103,10 @@ func (u *unmarshalGen) mapstruct(s *Struct) {
 	u.p.wrapErrCheck(u.ctx.ArgsStr())
 	u.p.print("\nswitch msgp.UnsafeString(field) {")
 	for i := range s.Fields {
+		if !ast.IsExported(s.Fields[i].FieldName) {
+			continue
+		}
+
 		if !u.p.ok() {
 			return
 		}

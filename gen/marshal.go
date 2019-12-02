@@ -2,6 +2,7 @@ package gen
 
 import (
 	"fmt"
+	"go/ast"
 	"io"
 	"strings"
 
@@ -162,6 +163,10 @@ func (m *marshalGen) mapstruct(s *Struct) {
 	}
 
 	for i := range s.Fields {
+		if !ast.IsExported(s.Fields[i].FieldName) {
+			continue
+		}
+
 		if !m.p.ok() {
 			return
 		}

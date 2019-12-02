@@ -40,7 +40,7 @@ var (
 	file       = flag.String("file", "", "input file")
 	marshal    = flag.Bool("marshal", true, "create Marshal and Unmarshal methods")
 	tests      = flag.Bool("tests", true, "create tests and benchmarks")
-	unexported = flag.Bool("unexported", false, "also process unexported types")
+	unexported = flag.Bool("unexported", true, "also process unexported types")
 )
 
 func main() {
