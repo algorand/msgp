@@ -20,7 +20,11 @@ type FileSet struct {
 	Identities map[string]gen.Elem // processed from specs
 	Directives []string            // raw preprocessor directives
 	Imports    []*ast.ImportSpec   // imports
+	ImportSet  ImportSet
 }
+
+// An ImportSet describes the FileSets for a group of imported packages
+type ImportSet map[string]*FileSet
 
 // File parses a file at the relative path
 // provided and produces a new *FileSet.
@@ -31,10 +35,6 @@ type FileSet struct {
 func File(name string, unexported bool) (*FileSet, error) {
 	pushstate(name)
 	defer popstate()
-	fs := &FileSet{
-		Specs:      make(map[string]ast.Expr),
-		Identities: make(map[string]gen.Elem),
-	}
 
 	cfg := &packages.Config{
 		Mode: packages.NeedName | packages.NeedImports | packages.NeedDeps | packages.NeedSyntax,
@@ -55,8 +55,29 @@ func File(name string, unexported bool) (*FileSet, error) {
 		break
 	}
 
-	fs.Package = one.Name
-	for _, fl := range one.Syntax {
+	imps := make(map[string]*FileSet)
+
+	return packageToFileSet(one, imps, unexported), nil
+}
+
+func packageToFileSet(p *packages.Package, imps map[string]*FileSet, unexported bool) *FileSet {
+	fs := &FileSet{
+		Package:    p.Name,
+		Specs:      make(map[string]ast.Expr),
+		Identities: make(map[string]gen.Elem),
+		ImportSet:  imps,
+	}
+
+	for name, importpkg := range p.Imports {
+		_, ok := imps[name]
+		if ok {
+			continue
+		}
+
+		imps[name] = packageToFileSet(importpkg, imps, unexported)
+	}
+
+	for _, fl := range p.Syntax {
 		pushstate(fl.Name.Name)
 		fs.Directives = append(fs.Directives, yieldComments(fl.Comments)...)
 		if !unexported {
@@ -66,15 +87,11 @@ func File(name string, unexported bool) (*FileSet, error) {
 		popstate()
 	}
 
-	if len(fs.Specs) == 0 {
-		return nil, fmt.Errorf("no definitions in %s", name)
-	}
-
 	fs.process()
 	fs.applyDirectives()
 	fs.propInline()
 
-	return fs, nil
+	return fs
 }
 
 // applyDirectives applies all of the directives that
