@@ -17,10 +17,12 @@ import (
 type FileSet struct {
 	Package    string              // package name
 	Specs      map[string]ast.Expr // type specs in file
+	Consts     map[string]ast.Expr // consts
 	Identities map[string]gen.Elem // processed from specs
 	Directives []string            // raw preprocessor directives
 	Imports    []*ast.ImportSpec   // imports
 	ImportSet  ImportSet
+	ImportName map[string]string
 }
 
 // An ImportSet describes the FileSets for a group of imported packages
@@ -37,7 +39,7 @@ func File(name string, unexported bool) (*FileSet, error) {
 	defer popstate()
 
 	cfg := &packages.Config{
-		Mode: packages.NeedName | packages.NeedImports | packages.NeedDeps | packages.NeedSyntax,
+		Mode: packages.NeedName | packages.NeedImports | packages.NeedDeps | packages.NeedSyntax | packages.NeedFiles | packages.NeedExportsFile | packages.NeedTypesInfo,
 	}
 
 	pkgs, err := packages.Load(cfg, name)
@@ -57,15 +59,21 @@ func File(name string, unexported bool) (*FileSet, error) {
 
 	imps := make(map[string]*FileSet)
 
-	return packageToFileSet(one, imps, unexported), nil
+	fs := packageToFileSet(one, imps, unexported)
+	fs.process()
+	fs.applyDirectives()
+	fs.propInline()
+	return fs, nil
 }
 
 func packageToFileSet(p *packages.Package, imps map[string]*FileSet, unexported bool) *FileSet {
 	fs := &FileSet{
 		Package:    p.Name,
 		Specs:      make(map[string]ast.Expr),
+		Consts:     make(map[string]ast.Expr),
 		Identities: make(map[string]gen.Elem),
 		ImportSet:  imps,
+		ImportName: make(map[string]string),
 	}
 
 	for name, importpkg := range p.Imports {
@@ -83,13 +91,26 @@ func packageToFileSet(p *packages.Package, imps map[string]*FileSet, unexported 
 		if !unexported {
 			ast.FileExports(fl)
 		}
+
+		for _, importspec := range fl.Imports {
+			pkgpath := importspec.Path.Value[1 : len(importspec.Path.Value)-1]
+			var importname string
+			if importspec.Name != nil {
+				importname = importspec.Name.Name
+			} else {
+				p, ok := imps[pkgpath]
+				if !ok {
+					fmt.Printf("missing import %s\n", pkgpath)
+				} else {
+					importname = p.Package
+				}
+			}
+			fs.ImportName[importname] = pkgpath
+		}
+
 		fs.getTypeSpecs(fl)
 		popstate()
 	}
-
-	fs.process()
-	fs.applyDirectives()
-	fs.propInline()
 
 	return fs
 }
@@ -283,8 +304,9 @@ func (fs *FileSet) getTypeSpecs(f *ast.File) {
 			for _, s := range g.Specs {
 
 				// for ast.TypeSpecs....
-				if ts, ok := s.(*ast.TypeSpec); ok {
-					switch ts.Type.(type) {
+				switch s := s.(type) {
+				case *ast.TypeSpec:
+					switch s.Type.(type) {
 
 					// this is the list of parse-able
 					// type specs
@@ -294,8 +316,13 @@ func (fs *FileSet) getTypeSpecs(f *ast.File) {
 						*ast.SelectorExpr,
 						*ast.MapType,
 						*ast.Ident:
-						fs.Specs[ts.Name.Name] = ts.Type
+						fs.Specs[s.Name.Name] = s.Type
 
+					}
+
+				case *ast.ValueSpec:
+					if len(s.Names) == 1 && len(s.Values) == 1 {
+						fs.Consts[s.Names[0].Name] = s.Values[0]
 					}
 				}
 			}
@@ -538,9 +565,24 @@ func (fs *FileSet) parseExpr(e ast.Expr) gen.Elem {
 					switch d := s.Obj.Decl.(type) {
 					case *ast.ValueSpec:
 						if len(d.Names) == 1 {
-							switch v := d.Values[0].(type) {
-							case *ast.BasicLit:
-								sizeHint = v.Value
+							v := d.Values[0]
+							// Keep trying to resolve this value
+							repeat := true
+							for repeat {
+								switch vv := v.(type) {
+								case *ast.BasicLit:
+									sizeHint = vv.Value
+									repeat = false
+								case *ast.SelectorExpr:
+									switch xv := vv.X.(type) {
+									case *ast.Ident:
+										pkgpath := fs.ImportName[xv.Name]
+										pkg := fs.ImportSet[pkgpath]
+										v = pkg.Consts[vv.Sel.Name]
+									}
+								default:
+									repeat = false
+								}
 							}
 						}
 					}
