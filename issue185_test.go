@@ -35,7 +35,7 @@ func TestIssue185Idents(t *testing.T) {
 		{tpl: issue185ComplexIdentsTpl, expectedChanged: []string{"Test2"}},
 	}
 
-	methods := []string{"DecodeMsg", "EncodeMsg", "Msgsize", "MarshalMsg", "UnmarshalMsg"}
+	methods := []string{"Msgsize", "MarshalMsg", "UnmarshalMsg"}
 
 	for idx, identCase := range identCases {
 		// generate the code, extract the generated variable names, mapped to function name
@@ -235,7 +235,7 @@ func goGenerateTpl(cwd, tfile string, tpl *template.Template, tplData interface{
 		return err
 	}
 
-	mode := gen.Encode | gen.Decode | gen.Size | gen.Marshal | gen.Unmarshal
+	mode := gen.Size | gen.Marshal | gen.Unmarshal
 
 	return Run(tfile, mode, false)
 }

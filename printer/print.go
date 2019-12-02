@@ -98,11 +98,7 @@ func generate(f *parse.FileSet, mode gen.Method) (*bytes.Buffer, *bytes.Buffer, 
 	if mode&gen.Test == gen.Test {
 		testbuf = bytes.NewBuffer(make([]byte, 0, 4096))
 		writePkgHeader(testbuf, f.Package)
-		if mode&(gen.Encode|gen.Decode) != 0 {
-			writeImportHeader(testbuf, "bytes", "github.com/zeldovich/msgp/msgp", "testing")
-		} else {
-			writeImportHeader(testbuf, "github.com/zeldovich/msgp/msgp", "testing")
-		}
+		writeImportHeader(testbuf, "github.com/zeldovich/msgp/msgp", "testing")
 		testwr = testbuf
 	}
 	return outbuf, testbuf, f.PrintTo(gen.NewPrinter(mode, outbuf, testwr))

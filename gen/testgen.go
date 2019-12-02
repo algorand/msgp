@@ -39,28 +39,6 @@ func (m *mtestGen) Execute(p Elem) error {
 
 func (m *mtestGen) Method() Method { return marshaltest }
 
-type etestGen struct {
-	passes
-	w io.Writer
-}
-
-func etest(w io.Writer) *etestGen {
-	return &etestGen{w: w}
-}
-
-func (e *etestGen) Execute(p Elem) error {
-	p = e.applyall(p)
-	if p != nil && IsPrintable(p) {
-		switch p.(type) {
-		case *Struct, *Array, *Slice, *Map:
-			return encodeTestTempl.Execute(e.w, p)
-		}
-	}
-	return nil
-}
-
-func (e *etestGen) Method() Method { return encodetest }
-
 func init() {
 	template.Must(marshalTestTempl.Parse(`func TestMarshalUnmarshal{{.TypeName}}(t *testing.T) {
 	v := {{.TypeName}}{}

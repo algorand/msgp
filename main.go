@@ -38,7 +38,6 @@ import (
 var (
 	out        = flag.String("o", "", "output file")
 	file       = flag.String("file", "", "input file")
-	encode     = flag.Bool("io", true, "create Encode and Decode methods")
 	marshal    = flag.Bool("marshal", true, "create Marshal and Unmarshal methods")
 	tests      = flag.Bool("tests", true, "create tests and benchmarks")
 	unexported = flag.Bool("unexported", false, "also process unexported types")
@@ -57,9 +56,6 @@ func main() {
 	}
 
 	var mode gen.Method
-	if *encode {
-		mode |= (gen.Encode | gen.Decode | gen.Size)
-	}
 	if *marshal {
 		mode |= (gen.Marshal | gen.Unmarshal | gen.Size)
 	}
@@ -68,7 +64,7 @@ func main() {
 	}
 
 	if mode&^gen.Test == 0 {
-		fmt.Println(chalk.Red.Color("No methods to generate; -io=false && -marshal=false"))
+		fmt.Println(chalk.Red.Color("No methods to generate; -marshal=false"))
 		os.Exit(1)
 	}
 

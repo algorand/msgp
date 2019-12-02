@@ -30,10 +30,6 @@ func (m Method) String() string {
 	switch m {
 	case 0, invalidmeth:
 		return "<invalid method>"
-	case Decode:
-		return "decode"
-	case Encode:
-		return "encode"
 	case Marshal:
 		return "marshal"
 	case Unmarshal:
@@ -43,8 +39,8 @@ func (m Method) String() string {
 	case Test:
 		return "test"
 	default:
-		// return e.g. "decode+encode+test"
-		modes := [...]Method{Decode, Encode, Marshal, Unmarshal, Size, Test}
+		// return e.g. "marshal+unmarshal+test"
+		modes := [...]Method{Marshal, Unmarshal, Size, Test}
 		any := false
 		nm := ""
 		for _, mm := range modes {
@@ -64,10 +60,6 @@ func (m Method) String() string {
 
 func strtoMeth(s string) Method {
 	switch s {
-	case "encode":
-		return Encode
-	case "decode":
-		return Decode
 	case "marshal":
 		return Marshal
 	case "unmarshal":
@@ -82,14 +74,11 @@ func strtoMeth(s string) Method {
 }
 
 const (
-	Decode      Method                       = 1 << iota // msgp.Decodable
-	Encode                                               // msgp.Encodable
-	Marshal                                              // msgp.Marshaler
+	Marshal     Method = 1 << iota                                   // msgp.Marshaler
 	Unmarshal                                            // msgp.Unmarshaler
 	Size                                                 // msgp.Sizer
 	Test                                                 // generate tests
 	invalidmeth                                          // this isn't a method
-	encodetest  = Encode | Decode | Test                 // tests for Encodable and Decodable
 	marshaltest = Marshal | Unmarshal | Test             // tests for Marshaler and Unmarshaler
 )
 
@@ -102,12 +91,6 @@ func NewPrinter(m Method, out io.Writer, tests io.Writer) *Printer {
 		panic("cannot print tests with 'nil' tests argument!")
 	}
 	gens := make([]generator, 0, 7)
-	if m.isset(Decode) {
-		gens = append(gens, decode(out))
-	}
-	if m.isset(Encode) {
-		gens = append(gens, encode(out))
-	}
 	if m.isset(Marshal) {
 		gens = append(gens, marshal(out))
 	}
@@ -119,9 +102,6 @@ func NewPrinter(m Method, out io.Writer, tests io.Writer) *Printer {
 	}
 	if m.isset(marshaltest) {
 		gens = append(gens, mtest(tests))
-	}
-	if m.isset(encodetest) {
-		gens = append(gens, etest(tests))
 	}
 	if len(gens) == 0 {
 		panic("NewPrinter called with invalid method flags")
