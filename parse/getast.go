@@ -564,7 +564,7 @@ func (fs *FileSet) parseExpr(e ast.Expr) gen.Elem {
 				if s.Obj != nil && s.Obj.Kind == ast.Con {
 					switch d := s.Obj.Decl.(type) {
 					case *ast.ValueSpec:
-						if len(d.Names) == 1 {
+						if len(d.Names) == 1 && len(d.Values) == 1 {
 							v := d.Values[0]
 							// Keep trying to resolve this value
 							repeat := true
