@@ -76,22 +76,7 @@ func AppendFloat32(b []byte, f float32) []byte {
 // AppendInt64 appends an int64 to the slice
 func AppendInt64(b []byte, i int64) []byte {
 	if i >= 0 {
-		switch {
-		case i <= math.MaxInt8:
-			return append(b, wfixint(uint8(i)))
-		case i <= math.MaxInt16:
-			o, n := ensure(b, 3)
-			putMint16(o[n:], int16(i))
-			return o
-		case i <= math.MaxInt32:
-			o, n := ensure(b, 5)
-			putMint32(o[n:], int32(i))
-			return o
-		default:
-			o, n := ensure(b, 9)
-			putMint64(o[n:], i)
-			return o
-		}
+		return AppendUint64(b, uint64(i))
 	}
 	switch {
 	case i >= -32:
