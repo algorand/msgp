@@ -3,6 +3,7 @@ package gen
 import (
 	"fmt"
 	"go/ast"
+	"strconv"
 	"strings"
 )
 
@@ -245,10 +246,32 @@ func (a *Array) Copy() Elem {
 func (a *Array) Complexity() int { return 1 + a.Els.Complexity() }
 
 // ZeroExpr returns the zero/empty expression or empty string if not supported.  Unsupported for this case.
-func (a *Array) ZeroExpr() string { return "" }
+func (a *Array) ZeroExpr() string {
+	zeroElem := a.Els.ZeroExpr()
+	if zeroElem == "" {
+		return ""
+	}
+
+	szString := a.SizeHint
+	if szString == "" {
+		szString = a.Size
+	}
+
+	sz, err := strconv.Atoi(szString)
+	if err != nil {
+		panic(err)
+	}
+
+	res := fmt.Sprintf("%s{", a.TypeName())
+	for i := 0; i < sz; i++ {
+		res += fmt.Sprintf("%s, ", zeroElem)
+	}
+	res += "}"
+	return res
+}
 
 // IfZeroExpr unsupported
-func (a *Array) IfZeroExpr() string { return "" }
+func (a *Array) IfZeroExpr() string { return a.Varname() + " == " + a.ZeroExpr() }
 
 // Map is a map[string]Elem
 type Map struct {
