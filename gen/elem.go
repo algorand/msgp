@@ -2,6 +2,7 @@ package gen
 
 import (
 	"fmt"
+	"go/ast"
 	"strings"
 )
 
@@ -450,7 +451,16 @@ func (s *Struct) IfZeroExpr() string {
 	if s.alias == "" {
 		return "" // structs with no names not supported (for now)
 	}
-	return s.Varname() + " == " + s.ZeroExpr()
+	res := "true"
+	for i := range s.Fields {
+		if !ast.IsExported(s.Fields[i].FieldName) {
+			continue
+		}
+
+		fieldZero := s.Fields[i].FieldElem.IfZeroExpr()
+		res += " && (" + fieldZero + ")"
+	}
+	return res
 }
 
 // AnyHasTagPart returns true if HasTagPart(p) is true for any field.

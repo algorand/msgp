@@ -39,6 +39,6 @@ func (s *isZeroGen) Execute(p Elem) error {
 
 	s.p.comment("MsgIsZero returns whether this is a zero value")
 
-	s.p.printf("\nfunc (%s %s) MsgIsZero() bool { return %s }", p.Varname(), imutMethodReceiver(p), p.IfZeroExpr())
+	s.p.printf("\nfunc (%s %s) MsgIsZero() bool { return %s }", p.Varname(), p.TypeName(), p.IfZeroExpr())
 	return s.p.err
 }
