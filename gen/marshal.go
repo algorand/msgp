@@ -37,13 +37,19 @@ func (m *marshalGen) Execute(p Elem) error {
 	if p == nil {
 		return nil
 	}
-	if !IsPrintable(p) {
-		return nil
-	}
 
 	m.ctx = &Context{}
 
 	m.p.comment("MarshalMsg implements msgp.Marshaler")
+
+	if IsDangling(p) {
+		baseType := p.(*BaseElem).IdentName
+		m.p.printf("\nfunc (%s %s) MarshalMsg(b []byte) ([]byte, error) {", p.Varname(), p.TypeName())
+		m.p.printf("\n  %s_cast := (%s)(%s)", p.Varname(), baseType, p.Varname())
+		m.p.printf("\n  return %s_cast.MarshalMsg(b)", p.Varname())
+		m.p.printf("\n}")
+		return m.p.err
+	}
 
 	// save the vname before
 	// calling methodReceiver so
@@ -121,17 +127,17 @@ func (m *marshalGen) mapstruct(s *Struct) {
 		varname: oeIdentPrefix + "Mask",
 	}
 
+	exportedFields := 0
+	for _, sf := range sortedFields {
+		if !ast.IsExported(sf.FieldName) {
+			continue
+		}
+		exportedFields++
+	}
+
 	omitempty := s.AnyHasTagPart("omitempty")
 	var fieldNVar string
 	if omitempty {
-
-		exportedFields := 0
-		for _, sf := range sortedFields {
-			if !ast.IsExported(sf.FieldName) {
-				continue
-			}
-			exportedFields++
-		}
 
 		fieldNVar = oeIdentPrefix + "Len"
 
@@ -157,7 +163,7 @@ func (m *marshalGen) mapstruct(s *Struct) {
 		}
 
 		m.p.printf("\n// variable map header, size %s", fieldNVar)
-		m.p.varAppendMapHeader("o", fieldNVar, nfields)
+		m.p.varAppendMapHeader("o", fieldNVar, exportedFields)
 		if !m.p.ok() {
 			return
 		}
@@ -171,10 +177,10 @@ func (m *marshalGen) mapstruct(s *Struct) {
 
 		// non-omitempty version
 		data = make([]byte, 0, 64)
-		data = msgp.AppendMapHeader(data, uint32(len(sortedFields)))
-		m.p.printf("\n// map header, size %d", len(sortedFields))
+		data = msgp.AppendMapHeader(data, uint32(exportedFields))
+		m.p.printf("\n// map header, size %d", exportedFields)
 		m.Fuse(data)
-		if len(sortedFields) == 0 {
+		if exportedFields == 0 {
 			m.fuseHook()
 		}
 

@@ -30,14 +30,20 @@ func (s *isZeroGen) Execute(p Elem) error {
 	if p == nil {
 		return nil
 	}
-	if !IsPrintable(p) {
-		return nil
-	}
 
 	s.ctx = &Context{}
 	s.ctx.PushString(p.TypeName())
 
 	s.p.comment("MsgIsZero returns whether this is a zero value")
+
+	if IsDangling(p) {
+		baseType := p.(*BaseElem).IdentName
+		s.p.printf("\nfunc (%s %s) MsgIsZero() bool {", p.Varname(), p.TypeName())
+		s.p.printf("\n  %s_cast := (%s)(%s)", p.Varname(), baseType, p.Varname())
+		s.p.printf("\n  return %s_cast.MsgIsZero()", p.Varname())
+		s.p.printf("\n}")
+		return s.p.err
+	}
 
 	s.p.printf("\nfunc (%s %s) MsgIsZero() bool { return %s }", p.Varname(), p.TypeName(), p.IfZeroExpr())
 	return s.p.err

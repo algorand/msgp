@@ -38,13 +38,19 @@ func (u *unmarshalGen) Execute(p Elem) error {
 	if p == nil {
 		return nil
 	}
-	if !IsPrintable(p) {
-		return nil
-	}
 
 	u.ctx = &Context{}
 
 	u.p.comment("UnmarshalMsg implements msgp.Unmarshaler")
+
+	if IsDangling(p) {
+		baseType := p.(*BaseElem).IdentName
+		u.p.printf("\nfunc (%s %s) UnmarshalMsg(bts []byte) ([]byte, error) {", p.Varname(), p.TypeName())
+		u.p.printf("\n  %s_cast := (%s)(%s)", p.Varname(), baseType, p.Varname())
+		u.p.printf("\n  return %s_cast.UnmarshalMsg(bts)", p.Varname())
+		u.p.printf("\n}")
+		return u.p.err
+	}
 
 	u.p.printf("\nfunc (%s %s) UnmarshalMsg(bts []byte) (o []byte, err error) {", p.Varname(), methodReceiver(p))
 	next(u, p)

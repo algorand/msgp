@@ -140,11 +140,11 @@ func (c *common) Varname() string     { return c.vname }
 func (c *common) Alias(typ string)    { c.alias = typ }
 func (c *common) hidden()             {}
 
-func IsPrintable(e Elem) bool {
-	if be, ok := e.(*BaseElem); ok && !be.Printable() {
-		return false
+func IsDangling(e Elem) bool {
+	if be, ok := e.(*BaseElem); ok && be.Dangling() {
+		return true
 	}
-	return true
+	return false
 }
 
 // Elem is a go type capable of being
@@ -202,7 +202,7 @@ func Ident(id string) *BaseElem {
 	if ok {
 		return &BaseElem{Value: p}
 	}
-	be := &BaseElem{Value: IDENT}
+	be := &BaseElem{Value: IDENT, IdentName: id}
 	be.Alias(id)
 	return be
 }
@@ -550,12 +550,13 @@ type BaseElem struct {
 	ShimToBase   string    // shim to base type, or empty
 	ShimFromBase string    // shim from base type, or empty
 	Value        Primitive // Type of element
+	IdentName    string    // name, for Value == IDENT
 	Convert      bool      // should we do an explicit conversion?
 	mustinline   bool      // must inline; not printable
 	needsref     bool      // needs reference for shim
 }
 
-func (s *BaseElem) Printable() bool { return !s.mustinline }
+func (s *BaseElem) Dangling() bool { return s.mustinline }
 
 func (s *BaseElem) Alias(typ string) {
 	s.common.Alias(typ)

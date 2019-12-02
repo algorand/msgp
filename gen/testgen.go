@@ -28,7 +28,7 @@ type mtestGen struct {
 
 func (m *mtestGen) Execute(p Elem) error {
 	p = m.applyall(p)
-	if p != nil && IsPrintable(p) {
+	if p != nil && !IsDangling(p) {
 		switch p.(type) {
 		case *Struct, *Array, *Slice, *Map:
 			return marshalTestTempl.Execute(m.w, p)

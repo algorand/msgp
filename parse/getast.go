@@ -183,7 +183,10 @@ func (f *FileSet) resolve(ls linkset) {
 
 	// what's left can't be resolved
 	for name, elem := range ls {
-		warnf("couldn't resolve type %s (%s)\n", name, elem.TypeName())
+		// warnf("couldn't resolve type %s (%s)\n", name, elem.TypeName())
+		nt := elem.Copy()
+		nt.Alias(name)
+		f.Identities[name] = nt
 	}
 }
 
