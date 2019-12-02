@@ -536,13 +536,17 @@ func (fs *FileSet) parseExpr(e ast.Expr) gen.Elem {
 	switch e := e.(type) {
 
 	case *ast.MapType:
-		k, ok := e.Key.(*ast.Ident)
-		if ok {
-			if in := fs.parseExpr(e.Value); in != nil {
-				return &gen.Map{Keytype: k.Name, Value: in}
-			}
+		kt := fs.parseExpr(e.Key)
+		if kt == nil {
+			return nil
 		}
-		return nil
+
+		vt := fs.parseExpr(e.Value)
+		if vt == nil {
+			return nil
+		}
+
+		return &gen.Map{Key: kt, Value: vt}
 
 	case *ast.Ident:
 		b := gen.Ident(e.Name)

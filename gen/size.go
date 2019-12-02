@@ -195,10 +195,12 @@ func (s *sizeGen) gMap(m *Map) {
 	vn := m.Varname()
 	s.p.printf("\nif %s != nil {", vn)
 	s.p.printf("\nfor %s, %s := range %s {", m.Keyidx, m.Validx, vn)
+	s.p.printf("\n_ = %s", m.Keyidx) // we may not use the key
 	s.p.printf("\n_ = %s", m.Validx) // we may not use the value
-	s.p.printf("\ns += msgp.StringPrefixSize + len(%s)", m.Keyidx)
+	s.p.printf("\ns += 0")
 	s.state = expr
 	s.ctx.PushVar(m.Keyidx)
+	next(s, m.Key)
 	next(s, m.Value)
 	s.ctx.Pop()
 	s.p.closeblock()

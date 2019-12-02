@@ -295,10 +295,10 @@ func (a *Array) IfZeroExpr() string {
 // Map is a map[string]Elem
 type Map struct {
 	common
-	Keyidx  string // key variable name
-	Keytype string // type of map key
-	Validx  string // value variable name
-	Value   Elem   // value element
+	Keyidx string // key variable name
+	Key    Elem   // type of map key
+	Validx string // value variable name
+	Value  Elem   // value element
 }
 
 func (m *Map) SetVarname(s string) {
@@ -312,6 +312,7 @@ ridx:
 		goto ridx
 	}
 
+	m.Key.SetVarname(m.Keyidx)
 	m.Value.SetVarname(m.Validx)
 }
 
@@ -319,12 +320,13 @@ func (m *Map) TypeName() string {
 	if m.common.alias != "" {
 		return m.common.alias
 	}
-	m.common.Alias("map[" + m.Keytype + "]" + m.Value.TypeName())
+	m.common.Alias("map[" + m.Key.TypeName() + "]" + m.Value.TypeName())
 	return m.common.alias
 }
 
 func (m *Map) Copy() Elem {
 	g := *m
+	g.Key = m.Key.Copy()
 	g.Value = m.Value.Copy()
 	return &g
 }
