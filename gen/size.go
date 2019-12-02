@@ -2,6 +2,7 @@ package gen
 
 import (
 	"fmt"
+	"go/ast"
 	"io"
 	"strconv"
 
@@ -104,12 +105,21 @@ func (s *sizeGen) gStruct(st *Struct) {
 		return
 	}
 
-	nfields := uint32(len(st.Fields))
+	nfields := uint32(0)
+	for i := range st.Fields {
+		if ast.IsExported(st.Fields[i].FieldName) {
+			nfields += 1
+		}
+	}
 
 	if st.AsTuple {
 		data := msgp.AppendArrayHeader(nil, nfields)
 		s.addConstant(strconv.Itoa(len(data)))
 		for i := range st.Fields {
+			if !ast.IsExported(st.Fields[i].FieldName) {
+				continue
+			}
+
 			if !s.p.ok() {
 				return
 			}
@@ -119,6 +129,10 @@ func (s *sizeGen) gStruct(st *Struct) {
 		data := msgp.AppendMapHeader(nil, nfields)
 		s.addConstant(strconv.Itoa(len(data)))
 		for i := range st.Fields {
+			if !ast.IsExported(st.Fields[i].FieldName) {
+				continue
+			}
+
 			data = data[:0]
 			data = msgp.AppendString(data, st.Fields[i].FieldTag)
 			s.addConstant(strconv.Itoa(len(data)))
