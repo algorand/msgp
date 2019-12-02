@@ -277,6 +277,7 @@ func (a *Array) IfZeroExpr() string { return a.Varname() + " == " + a.ZeroExpr()
 type Map struct {
 	common
 	Keyidx string // key variable name
+	Keytype string // type of map key
 	Validx string // value variable name
 	Value  Elem   // value element
 }
@@ -299,7 +300,7 @@ func (m *Map) TypeName() string {
 	if m.common.alias != "" {
 		return m.common.alias
 	}
-	m.common.Alias("map[string]" + m.Value.TypeName())
+	m.common.Alias("map[" + m.Keytype + "]" + m.Value.TypeName())
 	return m.common.alias
 }
 
