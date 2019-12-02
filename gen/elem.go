@@ -245,7 +245,7 @@ func (a *Array) Copy() Elem {
 
 func (a *Array) Complexity() int { return 1 + a.Els.Complexity() }
 
-// ZeroExpr returns the zero/empty expression or empty string if not supported.  Unsupported for this case.
+// ZeroExpr returns the zero/empty expression or empty string if not supported.
 func (a *Array) ZeroExpr() string {
 	zeroElem := a.Els.ZeroExpr()
 	if zeroElem == "" {
@@ -270,7 +270,7 @@ func (a *Array) ZeroExpr() string {
 	return res
 }
 
-// IfZeroExpr unsupported
+// IfZeroExpr returns the expression to compare to zero/empty.
 func (a *Array) IfZeroExpr() string { return a.Varname() + " == " + a.ZeroExpr() }
 
 // Map is a map[string]Elem
