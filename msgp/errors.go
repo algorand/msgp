@@ -19,6 +19,12 @@ var (
 	fatal error = errFatal{}
 )
 
+type ErrNoField string
+
+func (e ErrNoField) Error() string {
+	return fmt.Sprintf("Unknown field: %s", string(e))
+}
+
 // Error is the interface satisfied
 // by all of the errors that originate
 // from this package.

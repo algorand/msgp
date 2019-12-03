@@ -122,7 +122,7 @@ func (u *unmarshalGen) mapstruct(s *Struct) {
 		next(u, s.Fields[i].FieldElem)
 		u.ctx.Pop()
 	}
-	u.p.print("\ndefault:\nbts, err = msgp.Skip(bts)")
+	u.p.print("\ndefault:\nerr = msgp.ErrNoField(msgp.UnsafeString(field))")
 	u.p.wrapErrCheck(u.ctx.ArgsStr())
 	u.p.print("\n}\n}") // close switch and for loop
 }
