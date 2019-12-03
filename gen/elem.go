@@ -539,6 +539,7 @@ type StructField struct {
 	RawTag        string   // the full struct tag
 	FieldName     string   // the name of the struct field
 	FieldElem     Elem     // the field type
+	FieldPath     []string // set of embedded struct names for accessing FieldName
 }
 
 type byFieldTag []StructField
@@ -801,7 +802,11 @@ func (k Primitive) String() string {
 // all of the fields in a struct
 func writeStructFields(s []StructField, name string) {
 	for i := range s {
-		s[i].FieldElem.SetVarname(fmt.Sprintf("%s.%s", name, s[i].FieldName))
+		var path string
+		for _, pathelem := range s[i].FieldPath {
+			path += "." + pathelem
+		}
+		s[i].FieldElem.SetVarname(fmt.Sprintf("%s%s.%s", name, path, s[i].FieldName))
 	}
 }
 

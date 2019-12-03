@@ -410,6 +410,12 @@ func (fs *FileSet) getField(f *ast.Field) []gen.StructField {
 		if flatten {
 			maybe := fs.getFieldsFromEmbeddedStruct(f.Type)
 			if maybe != nil {
+				// Prefix all field names with the explicit
+				// embedded struct selector, to avoid ambiguity.
+				for i := range maybe {
+					maybe[i].FieldPath = append([]string{embedded(f.Type)}, maybe[i].FieldPath...)
+				}
+
 				return maybe
 			}
 		}
