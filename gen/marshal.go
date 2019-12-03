@@ -43,10 +43,11 @@ func (m *marshalGen) Execute(p Elem) error {
 	m.p.comment("MarshalMsg implements msgp.Marshaler")
 
 	if IsDangling(p) {
+		p = p.Copy()
 		baseType := p.(*BaseElem).IdentName
-		m.p.printf("\nfunc (%s %s) MarshalMsg(b []byte) ([]byte, error) {", p.Varname(), p.TypeName())
-		m.p.printf("\n  %s_cast := (%s)(%s)", p.Varname(), baseType, p.Varname())
-		m.p.printf("\n  return %s_cast.MarshalMsg(b)", p.Varname())
+		ptrName := p.Varname()
+		m.p.printf("\nfunc (%s %s) MarshalMsg(b []byte) ([]byte, error) {", p.Varname(), methodReceiver(p))
+		m.p.printf("\n  return ((*(%s))(%s)).MarshalMsg(b)", baseType, ptrName)
 		m.p.printf("\n}")
 		return m.p.err
 	}

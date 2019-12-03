@@ -37,10 +37,11 @@ func (s *isZeroGen) Execute(p Elem) error {
 	s.p.comment("MsgIsZero returns whether this is a zero value")
 
 	if IsDangling(p) {
+		p = p.Copy()
 		baseType := p.(*BaseElem).IdentName
-		s.p.printf("\nfunc (%s %s) MsgIsZero() bool {", p.Varname(), p.TypeName())
-		s.p.printf("\n  %s_cast := (%s)(%s)", p.Varname(), baseType, p.Varname())
-		s.p.printf("\n  return %s_cast.MsgIsZero()", p.Varname())
+		ptrName := p.Varname()
+		s.p.printf("\nfunc (%s %s) MsgIsZero() bool {", p.Varname(), methodReceiver(p))
+		s.p.printf("\n  return ((*(%s))(%s)).MsgIsZero()", baseType, ptrName)
 		s.p.printf("\n}")
 		return s.p.err
 	}

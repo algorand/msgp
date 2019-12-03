@@ -79,19 +79,20 @@ func (s *sizeGen) Execute(p Elem) error {
 		return nil
 	}
 
-	s.ctx = &Context{}
-	s.ctx.PushString(p.TypeName())
-
 	s.p.comment("Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message")
 
 	if IsDangling(p) {
+		p = p.Copy()
 		baseType := p.(*BaseElem).IdentName
-		s.p.printf("\nfunc (%s %s) Msgsize() int {", p.Varname(), p.TypeName())
-		s.p.printf("\n  %s_cast := (%s)(%s)", p.Varname(), baseType, p.Varname())
-		s.p.printf("\n  return %s_cast.Msgsize()", p.Varname())
+		ptrName := p.Varname()
+		s.p.printf("\nfunc (%s %s) Msgsize() int {", p.Varname(), methodReceiver(p))
+		s.p.printf("\n  return ((*(%s))(%s)).Msgsize()", baseType, ptrName)
 		s.p.printf("\n}")
 		return s.p.err
 	}
+
+	s.ctx = &Context{}
+	s.ctx.PushString(p.TypeName())
 
 	s.p.printf("\nfunc (%s %s) Msgsize() (s int) {", p.Varname(), imutMethodReceiver(p))
 	s.state = assign

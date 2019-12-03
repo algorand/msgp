@@ -44,10 +44,11 @@ func (u *unmarshalGen) Execute(p Elem) error {
 	u.p.comment("UnmarshalMsg implements msgp.Unmarshaler")
 
 	if IsDangling(p) {
+		p = p.Copy()
 		baseType := p.(*BaseElem).IdentName
-		u.p.printf("\nfunc (%s %s) UnmarshalMsg(bts []byte) ([]byte, error) {", p.Varname(), p.TypeName())
-		u.p.printf("\n  %s_cast := (%s)(%s)", p.Varname(), baseType, p.Varname())
-		u.p.printf("\n  return %s_cast.UnmarshalMsg(bts)", p.Varname())
+		ptrName := p.Varname()
+		u.p.printf("\nfunc (%s %s) UnmarshalMsg(bts []byte) ([]byte, error) {", p.Varname(), methodReceiver(p))
+		u.p.printf("\n  return ((*(%s))(%s)).UnmarshalMsg(bts)", baseType, ptrName)
 		u.p.printf("\n}")
 		return u.p.err
 	}
