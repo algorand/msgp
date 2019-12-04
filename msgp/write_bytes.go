@@ -162,6 +162,10 @@ func AppendBytes(b []byte, bts []byte) []byte {
 	var o []byte
 	var n int
 	switch {
+	case bts == nil:
+		o, n = ensure(b, 1)
+		o[n] = mnil
+		n += 1
 	case sz <= math.MaxUint8:
 		o, n = ensure(b, 2+sz)
 		prefixu8(o[n:], mbin8, uint8(sz))
