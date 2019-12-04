@@ -708,6 +708,10 @@ func readBytesBytes(b []byte, scratch []byte, zc bool) (v []byte, o []byte, err 
 	lead := b[0]
 	var read int
 	switch lead {
+	case mnil:
+		read = 0
+		b = b[1:]
+
 	case mbin8:
 		if l < 2 {
 			err = ErrShortBytes
