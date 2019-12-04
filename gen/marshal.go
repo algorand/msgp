@@ -237,7 +237,16 @@ func (m *marshalGen) gMap(s *Map) {
 	m.fuseHook()
 	vname := s.Varname()
 	m.rawAppend(mapHeader, lenAsUint32, vname)
-	m.p.printf("\nfor %s, %s := range %s {", s.Keyidx, s.Validx, vname)
+
+	m.p.printf("\n%s_keys := make([]%s, 0, len(%s))", s.Keyidx, s.Key.TypeName(), vname)
+	m.p.printf("\nfor %s := range %s {", s.Keyidx, vname)
+	m.p.printf("\n%s_keys = append(%s_keys, %s)", s.Keyidx, s.Keyidx, s.Keyidx)
+	m.p.closeblock()
+
+	m.p.printf("\nsort.Sort(%s(%s_keys))", s.Key.SortInterface(), s.Keyidx)
+
+	m.p.printf("\nfor _, %s := range %s_keys {", s.Keyidx, s.Keyidx)
+	m.p.printf("\n%s := %s[%s]", s.Validx, vname, s.Keyidx)
 	m.p.printf("\n_ = %s", s.Validx) // we may not use the value, if it's a struct{}
 	m.ctx.PushVar(s.Keyidx)
 	next(m, s.Key)

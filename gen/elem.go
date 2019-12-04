@@ -135,10 +135,11 @@ var builtins = map[string]struct{}{
 // common data/methods for every Elem
 type common struct{ vname, alias string }
 
-func (c *common) SetVarname(s string) { c.vname = s }
-func (c *common) Varname() string     { return c.vname }
-func (c *common) Alias(typ string)    { c.alias = typ }
-func (c *common) hidden()             {}
+func (c *common) SetVarname(s string)   { c.vname = s }
+func (c *common) Varname() string       { return c.vname }
+func (c *common) Alias(typ string)      { c.alias = typ }
+func (c *common) SortInterface() string { return "" }
+func (c *common) hidden()               {}
 
 func IsDangling(e Elem) bool {
 	if be, ok := e.(*BaseElem); ok && be.Dangling() {
@@ -191,6 +192,10 @@ type Elem interface {
 	// semicolon and then the expression.
 	// Returns "" if zero/empty not supported for this Elem.
 	IfZeroExpr() string
+
+	// SortInterface returns the sort.Interface for sorting a
+	// slice of this type.
+	SortInterface() string
 
 	hidden()
 }
@@ -747,6 +752,15 @@ func (s *BaseElem) IfZeroExpr() string {
 	return s.Varname() + " == " + z
 }
 
+// SortInterface returns a sort.Interface for sorting a slice of this type.
+func (s *BaseElem) SortInterface() string {
+	sortIntf, ok := sortInterface[s.TypeName()]
+	if ok {
+		return sortIntf
+	}
+	return ""
+}
+
 func (k Primitive) String() string {
 	switch k {
 	case String:
@@ -819,4 +833,21 @@ func writeStructFields(s []StructField, name string) {
 //
 func coerceArraySize(asz string) string {
 	return fmt.Sprintf("uint32(%s)", asz)
+}
+
+// SetSortInterface registers sort.Interface types from
+// the msgp:sort directive.  It would have been nice to
+// register it inside the Elem, but unfortunately that
+// only affects the type definition; call sites that
+// refer to that type (e.g., map keys) have a different
+// Elem that does not inherit (get copied) from the type
+// definition in f.Identities.
+var sortInterface map[string]string
+
+func SetSortInterface(sorttype string, sortintf string) {
+	if sortInterface == nil {
+		sortInterface = make(map[string]string)
+	}
+
+	sortInterface[sorttype] = sortintf
 }

@@ -24,6 +24,7 @@ var directives = map[string]directive{
 	"shim":   applyShim,
 	"ignore": ignore,
 	"tuple":  astuple,
+	"sort":   sortintf,
 }
 
 var passDirectives = map[string]passDirective{
@@ -126,5 +127,17 @@ func astuple(text []string, f *FileSet) error {
 			}
 		}
 	}
+	return nil
+}
+
+//msgp:sort {Type} {SortInterface}
+func sortintf(text []string, f *FileSet) error {
+	if len(text) != 3 {
+		return nil
+	}
+	sortType := strings.TrimSpace(text[1])
+	sortIntf := strings.TrimSpace(text[2])
+	gen.SetSortInterface(sortType, sortIntf)
+	infof("sorting %s using %s\n", sortType, sortIntf)
 	return nil
 }
