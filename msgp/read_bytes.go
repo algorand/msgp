@@ -709,9 +709,8 @@ func readBytesBytes(b []byte, scratch []byte, zc bool) (v []byte, o []byte, err 
 	var read int
 	switch lead {
 	case mnil:
-		v = nil
-		o = b[1:]
-		return
+		read = 0
+		b = b[1:]
 
 	case mbin8:
 		if l < 2 {
@@ -762,6 +761,13 @@ func readBytesBytes(b []byte, scratch []byte, zc bool) (v []byte, o []byte, err 
 	}
 
 	o = b[copy(v, b):]
+
+	// Match go-codec behavior: decode zero-length byte slices
+	// as nil.
+	if read == 0 {
+		o = nil
+	}
+
 	return
 }
 
