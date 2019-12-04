@@ -238,6 +238,7 @@ func (m *marshalGen) gMap(s *Map) {
 	vname := s.Varname()
 	m.rawAppend(mapHeader, lenAsUint32, vname)
 	m.p.printf("\nfor %s, %s := range %s {", s.Keyidx, s.Validx, vname)
+	m.p.printf("\n_ = %s", s.Validx) // we may not use the value, if it's a struct{}
 	m.ctx.PushVar(s.Keyidx)
 	next(m, s.Key)
 	next(m, s.Value)
