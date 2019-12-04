@@ -743,6 +743,12 @@ func (s *BaseElem) ZeroExpr() string {
 
 // IfZeroExpr returns the expression to compare to zero/empty.
 func (s *BaseElem) IfZeroExpr() string {
+	// Byte slices are special: we treat both nil and empty as
+	// zero for encoding purposes.
+	if s.Value == Bytes {
+		return "len(" + s.Varname() + ") == 0"
+	}
+
 	z := s.ZeroExpr()
 	if z == "" {
 		// Assume this is an identifier from another package,
