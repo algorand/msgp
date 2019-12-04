@@ -709,8 +709,9 @@ func readBytesBytes(b []byte, scratch []byte, zc bool) (v []byte, o []byte, err 
 	var read int
 	switch lead {
 	case mnil:
-		read = 0
-		b = b[1:]
+		v = nil
+		o = b[1:]
+		return
 
 	case mbin8:
 		if l < 2 {
