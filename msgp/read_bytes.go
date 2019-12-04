@@ -765,7 +765,7 @@ func readBytesBytes(b []byte, scratch []byte, zc bool) (v []byte, o []byte, err 
 	// Match go-codec behavior: decode zero-length byte slices
 	// as nil.
 	if read == 0 {
-		o = nil
+		v = nil
 	}
 
 	return
