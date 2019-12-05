@@ -709,8 +709,9 @@ func readBytesBytes(b []byte, scratch []byte, zc bool) (v []byte, o []byte, err 
 	var read int
 	switch lead {
 	case mnil:
-		read = 0
-		b = b[1:]
+		v = nil
+		o = b[1:]
+		return
 
 	case mbin8:
 		if l < 2 {
@@ -754,20 +755,15 @@ func readBytesBytes(b []byte, scratch []byte, zc bool) (v []byte, o []byte, err 
 		return
 	}
 
-	if cap(scratch) >= read {
+	// The "scratch != nil" check is to match go-codec behavior:
+	// decode zero-length byte slices as a non-nil byte slice.
+	if scratch != nil && cap(scratch) >= read {
 		v = scratch[0:read]
 	} else {
 		v = make([]byte, read)
 	}
 
 	o = b[copy(v, b):]
-
-	// Match go-codec behavior: decode zero-length byte slices
-	// as nil.
-	if read == 0 {
-		v = nil
-	}
-
 	return
 }
 
