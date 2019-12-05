@@ -7,9 +7,9 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"github.com/ttacon/chalk"
 	"github.com/algorand/msgp/gen"
 	"github.com/algorand/msgp/parse"
+	"github.com/ttacon/chalk"
 	"golang.org/x/tools/imports"
 )
 
