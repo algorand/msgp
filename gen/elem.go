@@ -289,6 +289,12 @@ func (a *Array) ZeroExpr() string {
 
 // IfZeroExpr returns the expression to compare to zero/empty.
 func (a *Array) IfZeroExpr() string {
+	// Special case for arrays of comparable elements: Go generates
+	// faster code if we just compare to a zero value.
+	if a.Els.Comparable() {
+		return fmt.Sprintf("%s == (%s{})", a.Varname(), a.TypeName())
+	}
+
 	sz := a.sz()
 
 	var res string
