@@ -46,10 +46,12 @@ func (s *isZeroGen) Execute(p Elem) error {
 		return s.p.err
 	}
 
+	s.p.printf("\nfunc (%s %s) MsgIsZero() bool {", p.Varname(), imutMethodReceiver(p))
 	ize := p.IfZeroExpr()
 	if ize == "" {
 		ize = "true"
 	}
-	s.p.printf("\nfunc (%s %s) MsgIsZero() bool { return %s }", p.Varname(), imutMethodReceiver(p), ize)
+	s.p.printf("\nreturn %s", ize)
+	s.p.printf("\n}")
 	return s.p.err
 }
