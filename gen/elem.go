@@ -510,10 +510,12 @@ func (s *Struct) IfZeroExpr() string {
 		}
 
 		fieldZero := s.Fields[i].FieldElem.IfZeroExpr()
-		if res != "" {
-			res += " && "
+		if fieldZero != "" {
+			if res != "" {
+				res += " && "
+			}
+			res += "(" + fieldZero + ")"
 		}
-		res += "(" + fieldZero + ")"
 	}
 	return res
 }
