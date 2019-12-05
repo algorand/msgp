@@ -1,5 +1,3 @@
-// +build purego appengine
-
 package msgp
 
 func UnsafeString(b []byte) string {
