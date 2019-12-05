@@ -1,7 +1,6 @@
 package msgp
 
 import (
-	"bytes"
 	"encoding/binary"
 	"math"
 	"time"
@@ -142,13 +141,6 @@ func appendNext(f *Reader, d *[]byte) error {
 		o--
 	}
 	return nil
-}
-
-// MarshalJSON implements json.Marshaler
-func (r *Raw) MarshalJSON() ([]byte, error) {
-	var buf bytes.Buffer
-	_, err := UnmarshalAsJSON(&buf, []byte(*r))
-	return buf.Bytes(), err
 }
 
 // ReadMapHeaderBytes reads a map header size
