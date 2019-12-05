@@ -686,20 +686,6 @@ func (m *Reader) ReadInt8() (i int8, err error) {
 	return
 }
 
-// ReadInt reads an int from the reader
-func (m *Reader) ReadInt() (i int, err error) {
-	if smallint {
-		var in int32
-		in, err = m.ReadInt32()
-		i = int(in)
-		return
-	}
-	var in int64
-	in, err = m.ReadInt64()
-	i = int(in)
-	return
-}
-
 // ReadUint64 reads a uint64 from the reader
 func (m *Reader) ReadUint64() (u uint64, err error) {
 	var p []byte
@@ -843,20 +829,6 @@ func (m *Reader) ReadUint8() (u uint8, err error) {
 		return
 	}
 	u = uint8(in)
-	return
-}
-
-// ReadUint reads a uint from the reader
-func (m *Reader) ReadUint() (u uint, err error) {
-	if smallint {
-		var un uint32
-		un, err = m.ReadUint32()
-		u = uint(un)
-		return
-	}
-	var un uint64
-	un, err = m.ReadUint64()
-	u = uint(un)
 	return
 }
 

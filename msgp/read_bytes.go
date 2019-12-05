@@ -491,21 +491,6 @@ func ReadInt8Bytes(b []byte) (int8, []byte, error) {
 	return int8(i), o, err
 }
 
-// ReadIntBytes tries to read an int
-// from 'b' and return the value and the remaining bytes.
-// Possible errors:
-// - ErrShortBytes (too few bytes)
-// - TypeError{} (not a int)
-// - IntOverflow{} (value doesn't fit in int; 32-bit platforms only)
-func ReadIntBytes(b []byte) (int, []byte, error) {
-	if smallint {
-		i, b, err := ReadInt32Bytes(b)
-		return int(i), b, err
-	}
-	i, b, err := ReadInt64Bytes(b)
-	return int(i), b, err
-}
-
 // ReadUint64Bytes tries to read a uint64
 // from 'b' and return the value and the remaining bytes.
 // Possible errors:
@@ -667,21 +652,6 @@ func ReadUint8Bytes(b []byte) (uint8, []byte, error) {
 		return 0, nil, UintOverflow{Value: v, FailedBitsize: 8}
 	}
 	return uint8(v), o, err
-}
-
-// ReadUintBytes tries to read a uint
-// from 'b' and return the value and the remaining bytes.
-// Possible errors:
-// - ErrShortBytes (too few bytes)
-// - TypeError{} (not a uint)
-// - UintOverflow{} (value too large for uint; 32-bit platforms only)
-func ReadUintBytes(b []byte) (uint, []byte, error) {
-	if smallint {
-		u, b, err := ReadUint32Bytes(b)
-		return uint(u), b, err
-	}
-	u, b, err := ReadUint64Bytes(b)
-	return uint(u), b, err
 }
 
 // ReadByteBytes is analogous to ReadUint8Bytes
