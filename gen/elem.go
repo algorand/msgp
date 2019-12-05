@@ -197,6 +197,12 @@ type Elem interface {
 	// slice of this type.
 	SortInterface() string
 
+	// Comparable returns whether the type is comparable, along the lines
+	// of the Go spec (https://golang.org/ref/spec#Comparison_operators),
+	// used to determine whether we can compare to a zero value to determine
+	// zeroness.
+	Comparable() bool
+
 	hidden()
 }
 
@@ -297,6 +303,11 @@ func (a *Array) IfZeroExpr() string {
 	return res
 }
 
+// Comparable returns whether this elem's type is comparable.
+func (a *Array) Comparable() bool {
+	return a.Els.Comparable()
+}
+
 // Map is a map[string]Elem
 type Map struct {
 	common
@@ -344,6 +355,11 @@ func (m *Map) ZeroExpr() string { return "nil" }
 // IfZeroExpr returns the expression to compare to zero/empty.
 func (m *Map) IfZeroExpr() string { return "len(" + m.Varname() + ") == 0" }
 
+// Comparable returns whether this elem's type is comparable.
+func (m *Map) Comparable() bool {
+	return false
+}
+
 type Slice struct {
 	common
 	Index string
@@ -384,6 +400,11 @@ func (s *Slice) ZeroExpr() string { return "nil" }
 
 // IfZeroExpr returns the expression to compare to zero/empty.
 func (s *Slice) IfZeroExpr() string { return "len(" + s.Varname() + ") == 0" }
+
+// Comparable returns whether this elem's type is comparable.
+func (s *Slice) Comparable() bool {
+	return false
+}
 
 type Ptr struct {
 	common
@@ -444,6 +465,11 @@ func (s *Ptr) ZeroExpr() string { return "nil" }
 
 // IfZeroExpr returns the expression to compare to zero/empty.
 func (s *Ptr) IfZeroExpr() string { return s.Varname() + " == nil" }
+
+// Comparable returns whether this elem's type is comparable.
+func (s *Ptr) Comparable() bool {
+	return false
+}
 
 type Struct struct {
 	common
@@ -518,6 +544,16 @@ func (s *Struct) IfZeroExpr() string {
 		}
 	}
 	return res
+}
+
+// Comparable returns whether this elem's type is comparable.
+func (s *Struct) Comparable() bool {
+	for _, sf := range s.Fields {
+		if !sf.FieldElem.Comparable() {
+			return false
+		}
+	}
+	return true
 }
 
 // AnyHasTagPart returns true if HasTagPart(p) is true for any field.
@@ -758,6 +794,18 @@ func (s *BaseElem) IfZeroExpr() string {
 		return s.Varname() + ".MsgIsZero()"
 	}
 	return s.Varname() + " == " + z
+}
+
+// Comparable returns whether this elem's type is comparable.
+func (s *BaseElem) Comparable() bool {
+	switch s.Value {
+	case String, Float32, Float64, Complex64, Complex128,
+		Uint, Uint8, Uint16, Uint32, Uint64, Byte,
+		Int, Int8, Int16, Int32, Int64, Bool, Time:
+		return true
+	default:
+		return false
+	}
 }
 
 // SortInterface returns a sort.Interface for sorting a slice of this type.
