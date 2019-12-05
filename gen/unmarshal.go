@@ -39,12 +39,15 @@ func (u *unmarshalGen) Execute(p Elem) error {
 		return nil
 	}
 
+	// We might change p.Varname in methodReceiver(); make a copy
+	// to not affect other code that will use p.
+	p = p.Copy()
+
 	u.ctx = &Context{}
 
 	u.p.comment("UnmarshalMsg implements msgp.Unmarshaler")
 
 	if IsDangling(p) {
-		p = p.Copy()
 		baseType := p.(*BaseElem).IdentName
 		ptrName := p.Varname()
 		u.p.printf("\nfunc (%s %s) UnmarshalMsg(bts []byte) ([]byte, error) {", p.Varname(), methodReceiver(p))

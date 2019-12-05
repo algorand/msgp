@@ -79,10 +79,13 @@ func (s *sizeGen) Execute(p Elem) error {
 		return nil
 	}
 
+	// We might change p.Varname in methodReceiver(); make a copy
+	// to not affect other code that will use p.
+	p = p.Copy()
+
 	s.p.comment("Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message")
 
 	if IsDangling(p) {
-		p = p.Copy()
 		baseType := p.(*BaseElem).IdentName
 		ptrName := p.Varname()
 		s.p.printf("\nfunc (%s %s) Msgsize() int {", p.Varname(), methodReceiver(p))

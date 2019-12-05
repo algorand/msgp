@@ -31,13 +31,16 @@ func (s *isZeroGen) Execute(p Elem) error {
 		return nil
 	}
 
+	// We might change p.Varname in methodReceiver(); make a copy
+	// to not affect other code that will use p.
+	p = p.Copy()
+
 	s.ctx = &Context{}
 	s.ctx.PushString(p.TypeName())
 
 	s.p.comment("MsgIsZero returns whether this is a zero value")
 
 	if IsDangling(p) {
-		p = p.Copy()
 		baseType := p.(*BaseElem).IdentName
 		ptrName := p.Varname()
 		s.p.printf("\nfunc (%s %s) MsgIsZero() bool {", p.Varname(), methodReceiver(p))

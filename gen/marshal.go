@@ -38,12 +38,15 @@ func (m *marshalGen) Execute(p Elem) error {
 		return nil
 	}
 
+	// We might change p.Varname in methodReceiver(); make a copy
+	// to not affect other code that will use p.
+	p = p.Copy()
+
 	m.ctx = &Context{}
 
 	m.p.comment("MarshalMsg implements msgp.Marshaler")
 
 	if IsDangling(p) {
-		p = p.Copy()
 		baseType := p.(*BaseElem).IdentName
 		ptrName := p.Varname()
 		m.p.printf("\nfunc (%s %s) MarshalMsg(b []byte) ([]byte, error) {", p.Varname(), methodReceiver(p))

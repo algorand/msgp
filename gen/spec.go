@@ -272,10 +272,12 @@ func imutMethodReceiver(p Elem) string {
 			return p.TypeName()
 		}
 	nope:
+		p.SetVarname("(*" + p.Varname() + ")")
 		return "*" + p.TypeName()
 
 	// gets dereferenced automatically
 	case *Array:
+		p.SetVarname("(*" + p.Varname() + ")")
 		return "*" + p.TypeName()
 
 	// everything else can be
@@ -289,19 +291,8 @@ func imutMethodReceiver(p Elem) string {
 // so that its method receiver
 // is of the write type.
 func methodReceiver(p Elem) string {
-	switch p.(type) {
-
-	// structs and arrays are
-	// dereferenced automatically,
-	// so no need to alter varname
-	case *Struct, *Array:
-		return "*" + p.TypeName()
-	// set variable name to
-	// *varname
-	default:
-		p.SetVarname("(*" + p.Varname() + ")")
-		return "*" + p.TypeName()
-	}
+	p.SetVarname("(*" + p.Varname() + ")")
+	return "*" + p.TypeName()
 }
 
 func unsetReceiver(p Elem) {
