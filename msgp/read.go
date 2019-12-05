@@ -1131,7 +1131,7 @@ fill:
 	if err != nil {
 		return
 	}
-	s = UnsafeString(out)
+	s = string(out)
 	return
 }
 
