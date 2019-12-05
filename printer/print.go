@@ -20,7 +20,7 @@ func infof(s string, v ...interface{}) {
 // PrintFile prints the methods for the provided list
 // of elements to the given file name and canonical
 // package path.
-func PrintFile(file string, f *parse.FileSet, mode gen.Method) error {
+func PrintFile(file string, f *parse.FileSet, mode gen.Method, skipFormat bool) error {
 	out, tests, err := generate(f, mode)
 	if err != nil {
 		return err
@@ -32,10 +32,10 @@ func PrintFile(file string, f *parse.FileSet, mode gen.Method) error {
 	// takes about the same amount of time as
 	// doing them in serial when GOMAXPROCS=1,
 	// and faster otherwise.
-	res := goformat(file, out.Bytes())
+	res := goformat(file, out.Bytes(), skipFormat)
 	if tests != nil {
 		testfile := strings.TrimSuffix(file, ".go") + "_test.go"
-		err = format(testfile, tests.Bytes())
+		err = format(testfile, tests.Bytes(), skipFormat)
 		if err != nil {
 			return err
 		}
@@ -48,18 +48,24 @@ func PrintFile(file string, f *parse.FileSet, mode gen.Method) error {
 	return nil
 }
 
-func format(file string, data []byte) error {
-	out, err := imports.Process(file, data, nil)
-	if err != nil {
-		return err
+func format(file string, data []byte, skipFormat bool) error {
+	var out []byte
+	if skipFormat {
+		out = data
+	} else {
+		var err error
+		out, err = imports.Process(file, data, nil)
+		if err != nil {
+			return err
+		}
 	}
 	return ioutil.WriteFile(file, out, 0600)
 }
 
-func goformat(file string, data []byte) <-chan error {
+func goformat(file string, data []byte, skipFormat bool) <-chan error {
 	out := make(chan error, 1)
 	go func(file string, data []byte, end chan error) {
-		end <- format(file, data)
+		end <- format(file, data, skipFormat)
 		infof(">>> Wrote and formatted \"%s\"\n", file)
 	}(file, data, out)
 	return out

@@ -41,6 +41,7 @@ var (
 	marshal    = flag.Bool("marshal", true, "create Marshal and Unmarshal methods")
 	tests      = flag.Bool("tests", true, "create tests and benchmarks")
 	unexported = flag.Bool("unexported", true, "also process unexported types")
+	skipFormat = flag.Bool("skip-format", false, "skip formatting the generated code (for debug)")
 )
 
 func main() {
@@ -94,7 +95,7 @@ func Run(gofile string, mode gen.Method, unexported bool) error {
 		return nil
 	}
 
-	return printer.PrintFile(newFilename(gofile, fs.Package), fs, mode)
+	return printer.PrintFile(newFilename(gofile, fs.Package), fs, mode, *skipFormat)
 }
 
 // picks a new file name based on input flags and input filename(s).
