@@ -1,4 +1,4 @@
-module github.com/zeldovich/msgp
+module github.com/algorand/msgp
 
 go 1.12
 

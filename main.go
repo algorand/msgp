@@ -30,9 +30,9 @@ import (
 	"strings"
 
 	"github.com/ttacon/chalk"
-	"github.com/zeldovich/msgp/gen"
-	"github.com/zeldovich/msgp/parse"
-	"github.com/zeldovich/msgp/printer"
+	"github.com/algorand/msgp/gen"
+	"github.com/algorand/msgp/parse"
+	"github.com/algorand/msgp/printer"
 )
 
 var (

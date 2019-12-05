@@ -3,7 +3,7 @@ package parse
 import (
 	"sort"
 
-	"github.com/zeldovich/msgp/gen"
+	"github.com/algorand/msgp/gen"
 )
 
 // This file defines when and how we

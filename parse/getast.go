@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/ttacon/chalk"
-	"github.com/zeldovich/msgp/gen"
+	"github.com/algorand/msgp/gen"
 	"golang.org/x/tools/go/packages"
 )
 

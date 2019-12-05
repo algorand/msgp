@@ -13,7 +13,7 @@ import (
 	"testing"
 	"text/template"
 
-	"github.com/zeldovich/msgp/gen"
+	"github.com/algorand/msgp/gen"
 )
 
 // When stuff's going wrong, you'll be glad this is here!

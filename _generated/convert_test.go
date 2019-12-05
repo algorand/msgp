@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/zeldovich/msgp/msgp"
+	"github.com/algorand/msgp/msgp"
 )
 
 func TestConvertFromEncodeError(t *testing.T) {

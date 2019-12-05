@@ -5,7 +5,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/zeldovich/msgp/msgp"
+	"github.com/algorand/msgp/msgp"
 )
 
 func fillErrorCtxAsMap() *ErrorCtxAsMap {

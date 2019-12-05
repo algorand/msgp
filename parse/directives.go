@@ -5,7 +5,7 @@ import (
 	"go/ast"
 	"strings"
 
-	"github.com/zeldovich/msgp/gen"
+	"github.com/algorand/msgp/gen"
 )
 
 const linePrefix = "//msgp:"

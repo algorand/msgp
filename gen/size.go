@@ -6,7 +6,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/zeldovich/msgp/msgp"
+	"github.com/algorand/msgp/msgp"
 )
 
 type sizeState uint8
