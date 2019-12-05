@@ -96,6 +96,10 @@ func packageToFileSet(p *packages.Package, imps map[string]*FileSet, unexported 
 
 		for _, importspec := range fl.Imports {
 			pkgpath := importspec.Path.Value[1 : len(importspec.Path.Value)-1]
+			if pkgpath == "C" {
+				continue
+			}
+
 			var importname string
 			if importspec.Name != nil {
 				importname = importspec.Name.Name
