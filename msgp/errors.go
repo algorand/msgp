@@ -134,6 +134,26 @@ type errShort struct{}
 func (e errShort) Error() string   { return "msgp: too few bytes left to read object" }
 func (e errShort) Resumable() bool { return false }
 
+// errOverflow is returned when the message
+// being decoded has some length field that
+// exceeds the maximum allowed length.
+type errOverflow struct{
+	l uint64
+	bound uint64
+}
+
+func (e errOverflow) Error() string   {
+	return fmt.Sprintf("msgp: length overflow: %d > %d", e.l, e.bound)
+}
+
+func (e errOverflow) Resumable() bool {
+	return false
+}
+
+func ErrOverflow(l uint64, bound uint64) error {
+	return errOverflow{l, bound}
+}
+
 type errFatal struct {
 	ctx string
 }

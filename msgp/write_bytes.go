@@ -7,6 +7,9 @@ import (
 )
 
 // ensure 'sz' extra bytes in 'b' btw len(b) and cap(b)
+// If the growth length overflows, we are anyway running
+// out of memory, so panic (on a subsequent out-of-bounds
+// slice reference) seems like as good of a result as any.
 func ensure(b []byte, sz int) ([]byte, int) {
 	l := len(b)
 	c := cap(b)
@@ -100,9 +103,6 @@ func AppendInt64(b []byte, i int64) []byte {
 	}
 }
 
-// AppendInt appends an int to the slice
-func AppendInt(b []byte, i int) []byte { return AppendInt64(b, int64(i)) }
-
 // AppendInt8 appends an int8 to the slice
 func AppendInt8(b []byte, i int8) []byte { return AppendInt64(b, int64(i)) }
 
@@ -140,9 +140,6 @@ func AppendUint64(b []byte, u uint64) []byte {
 
 	}
 }
-
-// AppendUint appends a uint to the slice
-func AppendUint(b []byte, u uint) []byte { return AppendUint64(b, uint64(u)) }
 
 // AppendUint8 appends a uint8 to the slice
 func AppendUint8(b []byte, u uint8) []byte { return AppendUint64(b, uint64(u)) }

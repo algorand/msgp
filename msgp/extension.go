@@ -262,7 +262,11 @@ func ReadExtensionBytes(b []byte, e Extension) ([]byte, error) {
 		if l < 6 {
 			return b, ErrShortBytes
 		}
-		sz = int(big.Uint32(b[1:]))
+		var err error
+		sz, err = u32int(big.Uint32(b[1:]))
+		if err != nil {
+			return b, err
+		}
 		typ = int8(b[5])
 		off = 6
 	default:

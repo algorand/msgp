@@ -12,6 +12,11 @@ type Sizer interface {
 }
 
 // Require ensures that cap(old)-len(old) >= extra.
+// It might be that this is impossible because len(old)+extra
+// overflows int.  If so, Require will not grow the slice,
+// but at this point, we have run out of memory, and panic
+// (from subsequent out-of-bounds access) is as good of an
+// outcome as any.
 func Require(old []byte, extra int) []byte {
 	l := len(old)
 	c := cap(old)

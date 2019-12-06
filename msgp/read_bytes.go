@@ -603,7 +603,10 @@ func readBytesBytes(b []byte, scratch []byte, zc bool) (v []byte, o []byte, err 
 			err = ErrShortBytes
 			return
 		}
-		read = int(big.Uint32(b[1:]))
+		read, err = u32int(big.Uint32(b[1:]))
+		if err != nil {
+			return
+		}
 		b = b[5:]
 
 	default:
@@ -736,7 +739,10 @@ func ReadStringZC(b []byte) (v []byte, o []byte, err error) {
 				err = ErrShortBytes
 				return
 			}
-			read = int(big.Uint32(b[1:]))
+			read, err = u32int(big.Uint32(b[1:]))
+			if err != nil {
+				return
+			}
 			b = b[5:]
 
 		default:
@@ -880,7 +886,12 @@ func ReadMapStrIntfBytes(b []byte, old map[string]interface{}) (v map[string]int
 		}
 		v = old
 	} else {
-		v = make(map[string]interface{}, int(sz))
+		var isz int
+		isz, err = u32int(sz)
+		if err != nil {
+			return
+		}
+		v = make(map[string]interface{}, isz)
 	}
 
 	for z := uint32(0); z < sz; z++ {
@@ -925,7 +936,13 @@ func ReadIntfBytes(b []byte) (i interface{}, o []byte, err error) {
 		if err != nil {
 			return
 		}
-		j := make([]interface{}, int(sz))
+
+		var isz int
+		isz, err = u32int(sz)
+		if err != nil {
+			return
+		}
+		j := make([]interface{}, isz)
 		i = j
 		for d := range j {
 			j[d], o, err = ReadIntfBytes(o)
