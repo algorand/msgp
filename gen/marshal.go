@@ -119,6 +119,14 @@ func (m *marshalGen) tuple(s *Struct) {
 
 func (m *marshalGen) mapstruct(s *Struct) {
 
+	// Every struct must have a _struct annotation with a codec: tag.
+	// In the common case, the tag would contain omitempty, but it could
+	// also be blank, if for some reason omitempty is not desired.  This
+	// check guards against developers forgetting to specify omitempty.
+	if !s.HasUnderscoreStructTag() {
+		panic(fmt.Sprintf("Missing _struct annotation on struct %v", s))
+	}
+
 	sortedFields := append([]StructField(nil), s.Fields...)
 	sort.Sort(byFieldTag(sortedFields))
 
