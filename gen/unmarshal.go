@@ -89,7 +89,7 @@ func (u *unmarshalGen) tuple(s *Struct) {
 
 	// open block
 	sz := randIdent()
-	u.p.declare(sz, u32)
+	u.p.declare(sz, "int")
 	u.assignAndCheck(sz, arrayHeader)
 	u.p.arrayCheck(strconv.Itoa(len(s.Fields)), sz)
 	for i := range s.Fields {
@@ -105,7 +105,7 @@ func (u *unmarshalGen) tuple(s *Struct) {
 func (u *unmarshalGen) mapstruct(s *Struct) {
 	u.needsField()
 	sz := randIdent()
-	u.p.declare(sz, u32)
+	u.p.declare(sz, "int")
 	u.assignAndCheck(sz, mapHeader)
 
 	u.p.printf("\nfor %s > 0 {", sz)
@@ -182,7 +182,7 @@ func (u *unmarshalGen) gArray(a *Array) {
 	}
 
 	sz := randIdent()
-	u.p.declare(sz, u32)
+	u.p.declare(sz, "int")
 	u.assignAndCheck(sz, arrayHeader)
 	u.p.arrayCheck(coerceArraySize(a.Size), sz)
 	u.p.rangeBlock(u.ctx, a.Index, a.Varname(), u, a.Els)
@@ -193,7 +193,7 @@ func (u *unmarshalGen) gSlice(s *Slice) {
 		return
 	}
 	sz := randIdent()
-	u.p.declare(sz, u32)
+	u.p.declare(sz, "int")
 	u.assignAndCheck(sz, arrayHeader)
 	u.p.resizeSlice(sz, s, u.ctx.ArgsStr())
 	u.p.rangeBlock(u.ctx, s.Index, s.Varname(), u, s.Els)
@@ -204,7 +204,7 @@ func (u *unmarshalGen) gMap(m *Map) {
 		return
 	}
 	sz := randIdent()
-	u.p.declare(sz, u32)
+	u.p.declare(sz, "int")
 	u.assignAndCheck(sz, mapHeader)
 
 	// allocate or clear map
