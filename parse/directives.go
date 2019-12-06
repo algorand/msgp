@@ -21,10 +21,11 @@ type passDirective func(gen.Method, []string, *gen.Printer) error
 // to add a directive, define a func([]string, *FileSet) error
 // and then add it to this list.
 var directives = map[string]directive{
-	"shim":   applyShim,
-	"ignore": ignore,
-	"tuple":  astuple,
-	"sort":   sortintf,
+	"shim":       applyShim,
+	"ignore":     ignore,
+	"tuple":      astuple,
+	"sort":       sortintf,
+	"allocbound": allocbound,
 }
 
 var passDirectives = map[string]passDirective{
@@ -139,5 +140,22 @@ func sortintf(text []string, f *FileSet) error {
 	sortIntf := strings.TrimSpace(text[2])
 	gen.SetSortInterface(sortType, sortIntf)
 	infof("sorting %s using %s\n", sortType, sortIntf)
+	return nil
+}
+
+//msgp:allocbound {Type} {Bound}
+func allocbound(text []string, f *FileSet) error {
+	if len(text) != 3 {
+		return nil
+	}
+	allocBoundType := strings.TrimSpace(text[1])
+	allocBound := strings.TrimSpace(text[2])
+	t, ok := f.Identities[allocBoundType]
+	if !ok {
+		warnf("allocbound: cannot find type %s\n", allocBoundType)
+	} else {
+		t.SetAllocBound(allocBound)
+		infof("allocbound(%s): setting to %s\n", allocBoundType, allocBound)
+	}
 	return nil
 }

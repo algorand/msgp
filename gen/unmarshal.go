@@ -195,7 +195,7 @@ func (u *unmarshalGen) gSlice(s *Slice) {
 	sz := randIdent()
 	u.p.declare(sz, u32)
 	u.assignAndCheck(sz, arrayHeader)
-	u.p.resizeSlice(sz, s)
+	u.p.resizeSlice(sz, s, u.ctx.ArgsStr())
 	u.p.rangeBlock(u.ctx, s.Index, s.Varname(), u, s.Els)
 }
 
@@ -208,7 +208,7 @@ func (u *unmarshalGen) gMap(m *Map) {
 	u.assignAndCheck(sz, mapHeader)
 
 	// allocate or clear map
-	u.p.resizeMap(sz, m)
+	u.p.resizeMap(sz, m, u.ctx.ArgsStr())
 
 	// loop and get key,value
 	u.p.printf("\nfor %s > 0 {", sz)

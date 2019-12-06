@@ -322,11 +322,24 @@ func (p *printer) declare(name string, typ string) {
 //     for key := range m { delete(m, key) }
 // }
 //
-func (p *printer) resizeMap(size string, m *Map) {
+func (p *printer) resizeMap(size string, m *Map, ctx string) {
 	vn := m.Varname()
 	if !p.ok() {
 		return
 	}
+
+	allocbound := m.AllocBound()
+	if allocbound == "" {
+		panic(fmt.Sprintf("Missing allocbound on map %v", m))
+	}
+	if allocbound != "-" {
+		p.printf("\nif %s > %s {", size, allocbound)
+		p.printf("\nerr = msgp.ErrOverflow(uint64(%s), uint64(%s))", size, allocbound)
+		p.printf("\nerr = msgp.WrapError(err, %s)", ctx)
+		p.printf("\nreturn")
+		p.printf("\n}")
+	}
+
 	p.printf("\nif %s == nil {", vn)
 	p.printf("\n%s = make(%s, %s)", vn, m.TypeName(), size)
 	p.printf("\n} else if len(%s) > 0 {", vn)
@@ -354,8 +367,20 @@ func (p *printer) wrapErrCheck(ctx string) {
 	p.print("\n}")
 }
 
-func (p *printer) resizeSlice(size string, s *Slice) {
-	p.printf("\nif cap(%[1]s) >= int(%[2]s) { %[1]s = (%[1]s)[:%[2]s] } else { %[1]s = make(%[3]s, %[2]s) }", s.Varname(), size, s.TypeName())
+func (p *printer) resizeSlice(size string, s *Slice, ctx string) {
+	allocbound := s.AllocBound()
+	if allocbound == "" {
+		panic(fmt.Sprintf("Missing allocbound on slice %v", s))
+	}
+	if allocbound != "-" {
+		p.printf("\nif %s > %s {", size, allocbound)
+		p.printf("\nerr = msgp.ErrOverflow(uint64(%s), uint64(%s))", size, allocbound)
+		p.printf("\nerr = msgp.WrapError(err, %s)", ctx)
+		p.printf("\nreturn")
+		p.printf("\n}")
+	}
+
+	p.printf("\nif cap(%[1]s) >= %[2]s { %[1]s = (%[1]s)[:%[2]s] } else { %[1]s = make(%[3]s, %[2]s) }", s.Varname(), size, s.TypeName())
 }
 
 func (p *printer) arrayCheck(want string, got string) {

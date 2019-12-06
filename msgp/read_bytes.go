@@ -54,7 +54,7 @@ func IsNil(b []byte) bool {
 // Possible errors:
 // - ErrShortBytes (too few bytes)
 // - TypeError{} (not a map)
-func ReadMapHeaderBytes(b []byte) (sz uint32, o []byte, err error) {
+func ReadMapHeaderBytes(b []byte) (sz int, o []byte, err error) {
 	l := len(b)
 	if l < 1 {
 		err = ErrShortBytes
@@ -63,7 +63,7 @@ func ReadMapHeaderBytes(b []byte) (sz uint32, o []byte, err error) {
 
 	lead := b[0]
 	if isfixmap(lead) {
-		sz = uint32(rfixmap(lead))
+		sz = int(rfixmap(lead))
 		o = b[1:]
 		return
 	}
@@ -74,7 +74,7 @@ func ReadMapHeaderBytes(b []byte) (sz uint32, o []byte, err error) {
 			err = ErrShortBytes
 			return
 		}
-		sz = uint32(big.Uint16(b[1:]))
+		sz = int(big.Uint16(b[1:]))
 		o = b[3:]
 		return
 
@@ -83,7 +83,10 @@ func ReadMapHeaderBytes(b []byte) (sz uint32, o []byte, err error) {
 			err = ErrShortBytes
 			return
 		}
-		sz = big.Uint32(b[1:])
+		sz, err = u32int(big.Uint32(b[1:]))
+		if err != nil {
+			return
+		}
 		o = b[5:]
 		return
 
@@ -115,13 +118,13 @@ func ReadMapKeyZC(b []byte) ([]byte, []byte, error) {
 // Possible errors:
 // - ErrShortBytes (too few bytes)
 // - TypeError{} (not an array)
-func ReadArrayHeaderBytes(b []byte) (sz uint32, o []byte, err error) {
+func ReadArrayHeaderBytes(b []byte) (sz int, o []byte, err error) {
 	if len(b) < 1 {
 		return 0, nil, ErrShortBytes
 	}
 	lead := b[0]
 	if isfixarray(lead) {
-		sz = uint32(rfixarray(lead))
+		sz = int(rfixarray(lead))
 		o = b[1:]
 		return
 	}
@@ -132,7 +135,7 @@ func ReadArrayHeaderBytes(b []byte) (sz uint32, o []byte, err error) {
 			err = ErrShortBytes
 			return
 		}
-		sz = uint32(big.Uint16(b[1:]))
+		sz = int(big.Uint16(b[1:]))
 		o = b[3:]
 		return
 
@@ -141,7 +144,10 @@ func ReadArrayHeaderBytes(b []byte) (sz uint32, o []byte, err error) {
 			err = ErrShortBytes
 			return
 		}
-		sz = big.Uint32(b[1:])
+		sz, err = u32int(big.Uint32(b[1:]))
+		if err != nil {
+			return
+		}
 		o = b[5:]
 		return
 

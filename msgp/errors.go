@@ -137,12 +137,12 @@ func (e errShort) Resumable() bool { return false }
 // errOverflow is returned when the message
 // being decoded has some length field that
 // exceeds the maximum allowed length.
-type errOverflow struct{
-	l uint64
+type errOverflow struct {
+	l     uint64
 	bound uint64
 }
 
-func (e errOverflow) Error() string   {
+func (e errOverflow) Error() string {
 	return fmt.Sprintf("msgp: length overflow: %d > %d", e.l, e.bound)
 }
 

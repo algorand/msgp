@@ -133,13 +133,18 @@ var builtins = map[string]struct{}{
 }
 
 // common data/methods for every Elem
-type common struct{ vname, alias string }
+type common struct {
+	vname, alias string
+	allocbound   string
+}
 
-func (c *common) SetVarname(s string)   { c.vname = s }
-func (c *common) Varname() string       { return c.vname }
-func (c *common) Alias(typ string)      { c.alias = typ }
-func (c *common) SortInterface() string { return "" }
-func (c *common) hidden()               {}
+func (c *common) SetVarname(s string)    { c.vname = s }
+func (c *common) Varname() string        { return c.vname }
+func (c *common) Alias(typ string)       { c.alias = typ }
+func (c *common) SortInterface() string  { return "" }
+func (c *common) SetAllocBound(s string) { c.allocbound = s }
+func (c *common) AllocBound() string     { return c.allocbound }
+func (c *common) hidden()                {}
 
 func IsDangling(e Elem) bool {
 	if be, ok := e.(*BaseElem); ok && be.Dangling() {
@@ -202,6 +207,15 @@ type Elem interface {
 	// used to determine whether we can compare to a zero value to determine
 	// zeroness.
 	Comparable() bool
+
+	// SetAllocBound specifies the maximum number of elements to allocate
+	// when decoding this type.  Meaningful for slices and maps.
+	// Blank means unspecified bound.  "-" means no bound.
+	SetAllocBound(bound string)
+
+	// AllocBound returns the maximum number of elements to allocate
+	// when decoding this type.  Meaningful for slices and maps.
+	AllocBound() string
 
 	hidden()
 }

@@ -380,6 +380,7 @@ func (fs *FileSet) parseFieldList(fl *ast.FieldList) []gen.StructField {
 func (fs *FileSet) getField(f *ast.Field) []gen.StructField {
 	sf := make([]gen.StructField, 1)
 	var extension, flatten bool
+	var allocbound string
 
 	// always flatten embedded structs
 	flatten = true
@@ -388,10 +389,12 @@ func (fs *FileSet) getField(f *ast.Field) []gen.StructField {
 	if f.Tag != nil {
 		body := reflect.StructTag(strings.Trim(f.Tag.Value, "`")).Get("codec")
 		tags := strings.Split(body, ",")
-		if len(tags) >= 2 {
-			switch tags[1] {
-			case "extension":
+		for _, tag := range tags[1:] {
+			if tag == "extension" {
 				extension = true
+			}
+			if strings.HasPrefix(tag, "allocbound=") {
+				allocbound = strings.Split(tag, "=")[1]
 			}
 		}
 		// ignore "-" fields
@@ -443,10 +446,13 @@ func (fs *FileSet) getField(f *ast.Field) []gen.StructField {
 		return sf
 	}
 	sf[0].FieldElem = ex
-	if sf[0].FieldTagParts == nil {
+	if sf[0].FieldTag == "" {
 		sf[0].FieldTag = sf[0].FieldName
+	}
+	if sf[0].FieldTagParts == nil {
 		sf[0].FieldTagParts = []string{sf[0].FieldName}
 	}
+	sf[0].FieldElem.SetAllocBound(allocbound)
 
 	// validate extension
 	if extension {

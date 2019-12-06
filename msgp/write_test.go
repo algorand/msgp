@@ -16,9 +16,9 @@ var (
 )
 
 func RandBytes(sz int) []byte {
-       out := make([]byte, sz)
-       for i := range out {
-               out[i] = byte(rand.Int63n(math.MaxInt64) % 256)
-       }
-       return out
+	out := make([]byte, sz)
+	for i := range out {
+		out[i] = byte(rand.Int63n(math.MaxInt64) % 256)
+	}
+	return out
 }
