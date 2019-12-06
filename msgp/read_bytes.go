@@ -662,7 +662,7 @@ func ReadExactBytes(b []byte, into []byte) (o []byte, err error) {
 	}
 
 	lead := b[0]
-	var read uint32
+	var read int
 	var skip int
 	switch lead {
 	case mbin8:
@@ -671,7 +671,7 @@ func ReadExactBytes(b []byte, into []byte) (o []byte, err error) {
 			return
 		}
 
-		read = uint32(b[1])
+		read = int(b[1])
 		skip = 2
 
 	case mbin16:
@@ -679,7 +679,7 @@ func ReadExactBytes(b []byte, into []byte) (o []byte, err error) {
 			err = ErrShortBytes
 			return
 		}
-		read = uint32(big.Uint16(b[1:]))
+		read = int(big.Uint16(b[1:]))
 		skip = 3
 
 	case mbin32:
@@ -687,7 +687,10 @@ func ReadExactBytes(b []byte, into []byte) (o []byte, err error) {
 			err = ErrShortBytes
 			return
 		}
-		read = uint32(big.Uint32(b[1:]))
+		read, err = u32int(big.Uint32(b[1:]))
+		if err != nil {
+			return
+		}
 		skip = 5
 
 	default:
@@ -695,8 +698,12 @@ func ReadExactBytes(b []byte, into []byte) (o []byte, err error) {
 		return
 	}
 
-	if read != uint32(len(into)) {
-		err = ArrayError{Wanted: uint32(len(into)), Got: read}
+	if read != len(into) {
+		err = ArrayError{Wanted: uint32(len(into)), Got: uint32(read)}
+		return
+	}
+	if read > len(b[skip:]) {
+		err = ErrShortBytes
 		return
 	}
 
