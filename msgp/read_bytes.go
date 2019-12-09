@@ -69,6 +69,18 @@ func ReadMapHeaderBytes(b []byte) (sz int, o []byte, err error) {
 	}
 
 	switch lead {
+	// go-codec compatibility: mnil decodes as an empty map/struct
+	case mnil:
+		sz = 0
+		o = b[1:]
+		return
+
+	// go-codec compatibility: mfixarray(0) decodes as an empty map/struct
+	case mfixarray:
+		sz = 0
+		o = b[1:]
+		return
+
 	case mmap16:
 		if l < 3 {
 			err = ErrShortBytes
