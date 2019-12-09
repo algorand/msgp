@@ -160,6 +160,10 @@ func (u *unmarshalGen) mapstruct(s *Struct) {
 	u.p.printf("\n} else {")
 	u.p.wrapErrCheck(u.ctx.ArgsStr())
 
+	u.p.printf("\nif %s {", isnil)
+	u.p.printf("\n  %s = %s{}", s.Varname(), s.TypeName())
+	u.p.printf("\n}")
+
 	u.p.printf("\nfor %s > 0 {", sz)
 	u.p.printf("\n%s--; field, bts, err = msgp.ReadMapKeyZC(bts)", sz)
 	u.p.wrapErrCheck(u.ctx.ArgsStr())
