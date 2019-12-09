@@ -234,6 +234,10 @@ func ReadFloat64Bytes(b []byte) (f float64, o []byte, err error) {
 			f = float64(tf)
 			return
 		}
+		if b[0] == mnil {
+			o = b[1:]
+			return
+		}
 		err = ErrShortBytes
 		return
 	}
@@ -260,13 +264,23 @@ func ReadFloat64Bytes(b []byte) (f float64, o []byte, err error) {
 // - ErrShortBytes (too few bytes)
 // - TypeError{} (not a float32)
 func ReadFloat32Bytes(b []byte) (f float32, o []byte, err error) {
-	if len(b) < 5 {
+	if len(b) < 1 {
 		err = ErrShortBytes
+		return
+	}
+
+	if b[0] == mnil {
+		o = b[1:]
 		return
 	}
 
 	if b[0] != mfloat32 {
 		err = TypeError{Method: Float32Type, Encoded: getType(b[0])}
+		return
+	}
+
+	if len(b) < 5 {
+		err = ErrShortBytes
 		return
 	}
 
@@ -288,6 +302,8 @@ func ReadBoolBytes(b []byte) (bool, []byte, error) {
 	case mtrue:
 		return true, b[1:], nil
 	case mfalse:
+		return false, b[1:], nil
+	case mnil:
 		return false, b[1:], nil
 	default:
 		return false, b, badPrefix(BoolType, b[0])
@@ -318,6 +334,11 @@ func ReadInt64Bytes(b []byte) (i int64, o []byte, err error) {
 	}
 
 	switch lead {
+	case mnil:
+		i = 0
+		o = b[1:]
+		return
+
 	case mint8:
 		if l < 2 {
 			err = ErrShortBytes
@@ -465,6 +486,11 @@ func ReadUint64Bytes(b []byte) (u uint64, o []byte, err error) {
 	}
 
 	switch lead {
+	case mnil:
+		u = 0
+		o = b[1:]
+		return
+
 	case mint8:
 		if l < 2 {
 			err = ErrShortBytes
@@ -919,6 +945,10 @@ func ReadStringZC(b []byte) (v []byte, o []byte, err error) {
 		b = b[1:]
 	} else {
 		switch lead {
+		case mnil:
+			read = 0
+			b = b[1:]
+
 		case mstr8:
 			if l < 2 {
 				err = ErrShortBytes
@@ -1051,6 +1081,14 @@ func ReadComplex64Bytes(b []byte) (c complex64, o []byte, err error) {
 // - TypeError{} (object not a complex64)
 // - ExtensionTypeError{} (object an extension of the correct size, but not a time.Time)
 func ReadTimeBytes(b []byte) (t time.Time, o []byte, err error) {
+	if len(b) < 1 {
+		err = ErrShortBytes
+		return
+	}
+	if b[0] == mnil {
+		o = b[1:]
+		return
+	}
 	if len(b) < 15 {
 		err = ErrShortBytes
 		return
