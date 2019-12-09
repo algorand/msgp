@@ -240,8 +240,13 @@ func (u *unmarshalGen) gArray(a *Array) {
 	u.p.declare(sz, "int")
 	u.p.declare(isnil, "bool")
 	u.assignAndCheck(sz, isnil, arrayHeader)
-	u.p.arrayCheck(a.Size, sz)
-	u.p.rangeBlock(u.ctx, a.Index, a.Varname(), u, a.Els)
+	u.p.arrayCheckBound(a.Size, sz)
+
+	u.ctx.PushVar(a.Index)
+	u.p.printf("\nfor %[1]s := 0; %[1]s < %[2]s; %[1]s++ {", a.Index, sz)
+	next(u, a.Els)
+	u.p.closeblock()
+	u.ctx.Pop()
 }
 
 func (u *unmarshalGen) gSlice(s *Slice) {
