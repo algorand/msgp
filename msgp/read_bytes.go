@@ -137,6 +137,12 @@ func ReadArrayHeaderBytes(b []byte) (sz int, o []byte, err error) {
 	}
 
 	switch lead {
+	case mnil:
+		// go-codec compat: nil decodes as an empty array
+		sz = 0
+		o = b[1:]
+		return
+
 	case marray16:
 		if len(b) < 3 {
 			err = ErrShortBytes
