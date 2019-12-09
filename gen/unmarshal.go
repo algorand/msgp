@@ -86,6 +86,8 @@ func (u *unmarshalGen) assignAndCheck(name string, isnil string, base string) {
 		return
 	}
 	u.p.printf("\n%s, %s, bts, err = msgp.Read%sBytes(bts)", name, isnil, base)
+	u.p.printf("\n// isnil %s might be unused", isnil)
+	u.p.printf("\n_ = %s", isnil)
 	u.p.wrapErrCheck(u.ctx.ArgsStr())
 }
 
