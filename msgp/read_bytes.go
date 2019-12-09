@@ -769,6 +769,28 @@ func ReadBytesZC(b []byte) (v []byte, o []byte, err error) {
 	return readBytesBytes(b, nil, true)
 }
 
+func readExactBytesSlow(b []byte, into []byte) (o []byte, err error) {
+	var count int
+	count, _, o, err = ReadArrayHeaderBytes(b)
+	if err != nil {
+		return
+	}
+
+	if count > len(into) {
+		err = ArrayError{Wanted: len(into), Got: count}
+		return
+	}
+
+	for idx := 0; idx < count; idx++ {
+		into[idx], o, err = ReadByteBytes(o)
+		if err != nil {
+			return
+		}
+	}
+
+	return
+}
+
 func ReadExactBytes(b []byte, into []byte) (o []byte, err error) {
 	l := len(b)
 	if l < 1 {
@@ -846,7 +868,14 @@ func ReadExactBytes(b []byte, into []byte) (o []byte, err error) {
 			skip = 5
 
 		default:
-			err = badPrefix(BinType, lead)
+			// go-codec compat: decode into byte array from
+			// explicit array encodings (including the weird case
+			// of decoding a map as a key-value interleaved array).
+			o, err = readExactBytesSlow(b, into)
+			if err != nil {
+				// If that doesn't work, return the original error code.
+				err = badPrefix(BinType, lead)
+			}
 			return
 		}
 	}
