@@ -137,6 +137,14 @@ func ReadArrayHeaderBytes(b []byte) (sz int, isnil bool, o []byte, err error) {
 		return
 	}
 
+	// go-codec compat: map can be decoded as an array, by alternating
+	// the map keys and values in the decoded array.
+	if isfixmap(lead) {
+		sz = 2 * int(rfixmap(lead))
+		o = b[1:]
+		return
+	}
+
 	switch lead {
 	case mnil:
 		// go-codec compat: nil decodes as an empty array (nil for slice)
@@ -160,6 +168,30 @@ func ReadArrayHeaderBytes(b []byte) (sz int, isnil bool, o []byte, err error) {
 			return
 		}
 		sz, err = u32int(big.Uint32(b[1:]))
+		if err != nil {
+			return
+		}
+		o = b[5:]
+		return
+
+		// go-codec compat: map can be decoded as an array, by alternating
+		// the map keys and values in the decoded array.
+	case mmap16:
+		if len(b) < 3 {
+			err = ErrShortBytes
+			return
+		}
+		sz = 2 * int(big.Uint16(b[1:]))
+		o = b[3:]
+		return
+
+	case mmap32:
+		if len(b) < 5 {
+			err = ErrShortBytes
+			return
+		}
+		u64sz := 2 * uint64(big.Uint32(b[1:]))
+		sz, err = u64int(u64sz)
 		if err != nil {
 			return
 		}
