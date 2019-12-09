@@ -127,6 +127,10 @@ func ReadMapKeyZC(b []byte) ([]byte, []byte, error) {
 // - ErrShortBytes (too few bytes)
 // - TypeError{} (not an array)
 func ReadArrayHeaderBytes(b []byte) (sz int, isnil bool, o []byte, err error) {
+	return readArrayHeaderBytes(b, true)
+}
+
+func readArrayHeaderBytes(b []byte, flattenMap bool) (sz int, isnil bool, o []byte, err error) {
 	if len(b) < 1 {
 		return 0, false, nil, ErrShortBytes
 	}
@@ -139,7 +143,7 @@ func ReadArrayHeaderBytes(b []byte) (sz int, isnil bool, o []byte, err error) {
 
 	// go-codec compat: map can be decoded as an array, by alternating
 	// the map keys and values in the decoded array.
-	if isfixmap(lead) {
+	if flattenMap && isfixmap(lead) {
 		sz = 2 * int(rfixmap(lead))
 		o = b[1:]
 		return
@@ -174,35 +178,38 @@ func ReadArrayHeaderBytes(b []byte) (sz int, isnil bool, o []byte, err error) {
 		o = b[5:]
 		return
 
-		// go-codec compat: map can be decoded as an array, by alternating
-		// the map keys and values in the decoded array.
+	// go-codec compat: map can be decoded as an array, by alternating
+	// the map keys and values in the decoded array.
 	case mmap16:
-		if len(b) < 3 {
-			err = ErrShortBytes
+		if flattenMap {
+			if len(b) < 3 {
+				err = ErrShortBytes
+				return
+			}
+			sz = 2 * int(big.Uint16(b[1:]))
+			o = b[3:]
 			return
 		}
-		sz = 2 * int(big.Uint16(b[1:]))
-		o = b[3:]
-		return
 
 	case mmap32:
-		if len(b) < 5 {
-			err = ErrShortBytes
+		if flattenMap {
+			if len(b) < 5 {
+				err = ErrShortBytes
+				return
+			}
+			u64sz := 2 * uint64(big.Uint32(b[1:]))
+			sz, err = u64int(u64sz)
+			if err != nil {
+				return
+			}
+			o = b[5:]
 			return
 		}
-		u64sz := 2 * uint64(big.Uint32(b[1:]))
-		sz, err = u64int(u64sz)
-		if err != nil {
-			return
-		}
-		o = b[5:]
-		return
-
-	default:
-		o = b
-		err = badPrefix(ArrayType, lead)
-		return
 	}
+
+	o = b
+	err = badPrefix(ArrayType, lead)
+	return
 }
 
 // ReadNilBytes tries to read a "nil" byte
@@ -647,12 +654,12 @@ func ReadByteBytes(b []byte) (byte, []byte, error) {
 // - ErrShortBytes (too few bytes)
 // - TypeError{} (not a 'bin' object)
 func ReadBytesBytes(b []byte, scratch []byte) (v []byte, o []byte, err error) {
-	return readBytesBytes(b, scratch, false)
+	return readBytesBytes(b, scratch, false, true)
 }
 
-func readBytesBytesSlow(b []byte) (v []byte, o []byte, err error) {
+func readBytesBytesSlow(b []byte, flattenMap bool) (v []byte, o []byte, err error) {
 	var count int
-	count, _, o, err = ReadArrayHeaderBytes(b)
+	count, _, o, err = readArrayHeaderBytes(b, flattenMap)
 	if err != nil {
 		return
 	}
@@ -673,7 +680,7 @@ func readBytesBytesSlow(b []byte) (v []byte, o []byte, err error) {
 	return
 }
 
-func readBytesBytes(b []byte, scratch []byte, zc bool) (v []byte, o []byte, err error) {
+func readBytesBytes(b []byte, scratch []byte, zc bool, flattenMap bool) (v []byte, o []byte, err error) {
 	l := len(b)
 	if l < 1 {
 		return nil, nil, ErrShortBytes
@@ -752,7 +759,7 @@ func readBytesBytes(b []byte, scratch []byte, zc bool) (v []byte, o []byte, err 
 			// go-codec compat: decode into byte array/slice from
 			// explicit array encodings (including the weird case
 			// of decoding a map as a key-value interleaved array).
-			v, o, err = readBytesBytesSlow(b)
+			v, o, err = readBytesBytesSlow(b, flattenMap)
 			if err != nil {
 				// If that doesn't work, return the original error code.
 				err = badPrefix(BinType, lead)
@@ -792,7 +799,7 @@ func readBytesBytes(b []byte, scratch []byte, zc bool) (v []byte, o []byte, err 
 // - ErrShortBytes (b not long enough)
 // - TypeError{} (object not 'bin')
 func ReadBytesZC(b []byte) (v []byte, o []byte, err error) {
-	return readBytesBytes(b, nil, true)
+	return readBytesBytes(b, nil, true, true)
 }
 
 func readExactBytesSlow(b []byte, into []byte) (o []byte, err error) {
@@ -984,7 +991,7 @@ func ReadStringZC(b []byte) (v []byte, o []byte, err error) {
 
 		default:
 			// go-codec compat: decode bin types into string
-			v, o, err = readBytesBytes(b, nil, true)
+			v, o, err = readBytesBytes(b, nil, true, false)
 			if err != nil {
 				// If the fallback fails, return original error code
 				err = TypeError{Method: StrType, Encoded: getType(lead)}
