@@ -295,14 +295,6 @@ func methodReceiver(p Elem) string {
 	return "*" + p.TypeName()
 }
 
-func unsetReceiver(p Elem) {
-	switch p.(type) {
-	case *Struct, *Array:
-	default:
-		p.SetVarname("z")
-	}
-}
-
 // shared utility for generators
 type printer struct {
 	w   io.Writer

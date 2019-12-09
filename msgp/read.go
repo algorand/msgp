@@ -72,6 +72,11 @@ func (t Type) String() string {
 // UnmarshalMsg unmarshals the object
 // from binary, returing any leftover
 // bytes and any errors encountered.
+// CanUnmarshalMsg checks that o is of the same type as
+// was used to generate the UnmarshalMsg code; it can be
+// used to guard against UnmarshalMsg() going to an embedded
+// field in a struct rather than unmarshaling the entire struct.
 type Unmarshaler interface {
 	UnmarshalMsg([]byte) ([]byte, error)
+	CanUnmarshalMsg(o interface{}) bool
 }

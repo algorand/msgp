@@ -48,10 +48,17 @@ func (m *marshalGen) Execute(p Elem) error {
 
 	if IsDangling(p) {
 		baseType := p.(*BaseElem).IdentName
-		ptrName := p.Varname()
-		m.p.printf("\nfunc (%s %s) MarshalMsg(b []byte) ([]byte, error) {", p.Varname(), methodReceiver(p))
-		m.p.printf("\n  return ((*(%s))(%s)).MarshalMsg(b)", baseType, ptrName)
+		c := p.Varname()
+		methodRecv := methodReceiver(p)
+		m.p.printf("\nfunc (%s %s) MarshalMsg(b []byte) ([]byte, error) {", c, methodRecv)
+		m.p.printf("\n  return ((*(%s))(%s)).MarshalMsg(b)", baseType, c)
 		m.p.printf("\n}")
+
+		m.p.printf("\nfunc (_ %[2]s) CanMarshalMsg(%[1]s interface{}) bool {", c, methodRecv)
+		m.p.printf("\n  _, ok := (%s).(%s)", c, methodRecv)
+		m.p.printf("\n  return ok")
+		m.p.printf("\n}")
+
 		return m.p.err
 	}
 
@@ -59,11 +66,18 @@ func (m *marshalGen) Execute(p Elem) error {
 	// calling methodReceiver so
 	// that z.Msgsize() is printed correctly
 	c := p.Varname()
+	methodRecv := imutMethodReceiver(p)
 
-	m.p.printf("\nfunc (%s %s) MarshalMsg(b []byte) (o []byte, err error) {", p.Varname(), imutMethodReceiver(p))
+	m.p.printf("\nfunc (%s %s) MarshalMsg(b []byte) (o []byte, err error) {", c, methodRecv)
 	m.p.printf("\no = msgp.Require(b, %s.Msgsize())", c)
 	next(m, p)
 	m.p.nakedReturn()
+
+	m.p.printf("\nfunc (_ %[2]s) CanMarshalMsg(%[1]s interface{}) bool {", c, methodRecv)
+	m.p.printf("\n  _, ok := (%s).(%s)", c, methodRecv)
+	m.p.printf("\n  return ok")
+	m.p.printf("\n}")
+
 	return m.p.err
 }
 

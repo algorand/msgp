@@ -49,18 +49,34 @@ func (u *unmarshalGen) Execute(p Elem) error {
 
 	if IsDangling(p) {
 		baseType := p.(*BaseElem).IdentName
-		ptrName := p.Varname()
-		u.p.printf("\nfunc (%s %s) UnmarshalMsg(bts []byte) ([]byte, error) {", p.Varname(), methodReceiver(p))
-		u.p.printf("\n  return ((*(%s))(%s)).UnmarshalMsg(bts)", baseType, ptrName)
+		c := p.Varname()
+		methodRecv := methodReceiver(p)
+		u.p.printf("\nfunc (%s %s) UnmarshalMsg(bts []byte) ([]byte, error) {", c, methodRecv)
+		u.p.printf("\n  return ((*(%s))(%s)).UnmarshalMsg(bts)", baseType, c)
 		u.p.printf("\n}")
+
+                u.p.printf("\nfunc (_ %[2]s) CanUnmarshalMsg(%[1]s interface{}) bool {", c, methodRecv)
+                u.p.printf("\n  _, ok := (%s).(%s)", c, methodRecv)
+                u.p.printf("\n  return ok")
+                u.p.printf("\n}")
+
 		return u.p.err
 	}
 
-	u.p.printf("\nfunc (%s %s) UnmarshalMsg(bts []byte) (o []byte, err error) {", p.Varname(), methodReceiver(p))
+        // save the vname before calling methodReceiver 
+        c := p.Varname()
+        methodRecv := methodReceiver(p)
+
+	u.p.printf("\nfunc (%s %s) UnmarshalMsg(bts []byte) (o []byte, err error) {", c, methodRecv)
 	next(u, p)
 	u.p.print("\no = bts")
 	u.p.nakedReturn()
-	unsetReceiver(p)
+
+        u.p.printf("\nfunc (_ %[2]s) CanUnmarshalMsg(%[1]s interface{}) bool {", c, methodRecv)
+        u.p.printf("\n  _, ok := (%s).(%s)", c, methodRecv)
+        u.p.printf("\n  return ok")
+        u.p.printf("\n}")
+
 	return u.p.err
 }
 

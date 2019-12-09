@@ -46,6 +46,11 @@ func Require(old []byte, extra int) []byte {
 // form of the object to the provided
 // byte slice, returning the extended
 // slice and any errors encountered.
+// CanMarshalMsg checks that o is of the same type as
+// was used to generate the MarshalMsg code; it can be
+// used to guard against MarshalMsg() going to an embedded
+// field in a struct rather than marshaling the entire struct.
 type Marshaler interface {
 	MarshalMsg([]byte) ([]byte, error)
+	CanMarshalMsg(o interface{}) bool
 }
