@@ -240,7 +240,7 @@ func (u *unmarshalGen) gArray(a *Array) {
 	u.p.declare(sz, "int")
 	u.p.declare(isnil, "bool")
 	u.assignAndCheck(sz, isnil, arrayHeader)
-	u.p.arrayCheck(coerceArraySize(a.Size), sz)
+	u.p.arrayCheck(a.Size, sz)
 	u.p.rangeBlock(u.ctx, a.Index, a.Varname(), u, a.Els)
 }
 

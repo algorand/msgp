@@ -912,17 +912,6 @@ func writeStructFields(s []StructField, name string) {
 	}
 }
 
-// coerceArraySize ensures we can compare constant array lengths.
-//
-// msgpack array headers are 32 bit unsigned, which is reflected in the
-// ArrayHeader implementation in this library using uint32. On the Go side, we
-// can declare array lengths as any constant integer width, which breaks when
-// attempting a direct comparison to an array header's uint32.
-//
-func coerceArraySize(asz string) string {
-	return fmt.Sprintf("uint32(%s)", asz)
-}
-
 // SetSortInterface registers sort.Interface types from
 // the msgp:sort directive.  It would have been nice to
 // register it inside the Elem, but unfortunately that

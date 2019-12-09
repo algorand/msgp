@@ -180,8 +180,8 @@ func (f errFatal) withContext(ctx string) error { f.ctx = addCtx(f.ctx, ctx); re
 // when decoding a fix-sized array
 // of the wrong size
 type ArrayError struct {
-	Wanted uint32
-	Got    uint32
+	Wanted int
+	Got    int
 	ctx    string
 }
 
