@@ -106,7 +106,38 @@ func (u *unmarshalGen) mapstruct(s *Struct) {
 	u.needsField()
 	sz := randIdent()
 	u.p.declare(sz, "int")
-	u.assignAndCheck(sz, mapHeader)
+
+	// go-codec compat: decode an array as sequential elements from this struct,
+	// in the order they are defined in the Go type (as opposed to canonical
+	// order by sorted tag).
+	u.p.printf("\n%s, bts, err = msgp.Read%sBytes(bts)", sz, mapHeader)
+	u.p.printf("\nif _, ok := err.(msgp.TypeError); ok {")
+
+	u.assignAndCheck(sz, arrayHeader)
+
+	u.ctx.PushString("struct-from-array")
+	for i := range s.Fields {
+		if !ast.IsExported(s.Fields[i].FieldName) {
+			continue
+		}
+
+		u.p.printf("\nif %s > 0 {", sz)
+		u.p.printf("\n%s--", sz)
+		u.ctx.PushString(s.Fields[i].FieldName)
+		next(u, s.Fields[i].FieldElem)
+		u.ctx.Pop()
+		u.p.printf("\n}")
+	}
+
+	u.p.printf("\nif %s > 0 {", sz)
+	u.p.printf("\nerr = msgp.ErrTooManyArrayFields(%s)", sz)
+	u.p.wrapErrCheck(u.ctx.ArgsStr())
+	u.p.printf("\n}")
+	u.ctx.Pop()
+
+	u.p.printf("\nreturn")
+	u.p.printf("\n}")
+	u.p.wrapErrCheck(u.ctx.ArgsStr())
 
 	u.p.printf("\nfor %s > 0 {", sz)
 	u.p.printf("\n%s--; field, bts, err = msgp.ReadMapKeyZC(bts)", sz)

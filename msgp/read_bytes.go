@@ -75,12 +75,6 @@ func ReadMapHeaderBytes(b []byte) (sz int, o []byte, err error) {
 		o = b[1:]
 		return
 
-	// go-codec compatibility: mfixarray(0) decodes as an empty map/struct
-	case mfixarray:
-		sz = 0
-		o = b[1:]
-		return
-
 	case mmap16:
 		if l < 3 {
 			err = ErrShortBytes
@@ -103,6 +97,7 @@ func ReadMapHeaderBytes(b []byte) (sz int, o []byte, err error) {
 		return
 
 	default:
+		o = b
 		err = badPrefix(MapType, lead)
 		return
 	}
@@ -164,6 +159,7 @@ func ReadArrayHeaderBytes(b []byte) (sz int, o []byte, err error) {
 		return
 
 	default:
+		o = b
 		err = badPrefix(ArrayType, lead)
 		return
 	}

@@ -25,6 +25,12 @@ func (e ErrNoField) Error() string {
 	return fmt.Sprintf("Unknown field: %s", string(e))
 }
 
+type ErrTooManyArrayFields int
+
+func (e ErrTooManyArrayFields) Error() string {
+	return fmt.Sprintf("Too many array fields when decoding into struct: %d left", int(e))
+}
+
 // Error is the interface satisfied
 // by all of the errors that originate
 // from this package.
