@@ -624,6 +624,29 @@ func ReadBytesBytes(b []byte, scratch []byte) (v []byte, o []byte, err error) {
 	return readBytesBytes(b, scratch, false)
 }
 
+func readBytesBytesSlow(b []byte) (v []byte, o []byte, err error) {
+	var count int
+	count, _, o, err = ReadArrayHeaderBytes(b)
+	if err != nil {
+		return
+	}
+
+	if len(o) < count {
+		err = ErrShortBytes
+		return
+	}
+
+	v = make([]byte, count)
+	for idx := range v {
+		v[idx], o, err = ReadByteBytes(o)
+		if err != nil {
+			return
+		}
+	}
+
+	return
+}
+
 func readBytesBytes(b []byte, scratch []byte, zc bool) (v []byte, o []byte, err error) {
 	l := len(b)
 	if l < 1 {
@@ -700,7 +723,14 @@ func readBytesBytes(b []byte, scratch []byte, zc bool) (v []byte, o []byte, err 
 			b = b[5:]
 
 		default:
-			err = badPrefix(BinType, lead)
+			// go-codec compat: decode into byte array/slice from
+			// explicit array encodings (including the weird case
+			// of decoding a map as a key-value interleaved array).
+			v, o, err = readBytesBytesSlow(b)
+			if err != nil {
+				// If that doesn't work, return the original error code.
+				err = badPrefix(BinType, lead)
+			}
 			return
 		}
 	}
