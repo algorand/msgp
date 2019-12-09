@@ -380,7 +380,9 @@ func (p *printer) resizeSlice(size string, s *Slice, ctx string) {
 		p.printf("\n}")
 	}
 
-	p.printf("\nif cap(%[1]s) >= %[2]s { %[1]s = (%[1]s)[:%[2]s] } else { %[1]s = make(%[3]s, %[2]s) }", s.Varname(), size, s.TypeName())
+	// go-codec compat: allocate a zero-size slice even though nil
+	// is also a reasonable (and more efficient) representation..
+	p.printf("\nif %[1]s != nil && cap(%[1]s) >= %[2]s { %[1]s = (%[1]s)[:%[2]s] } else { %[1]s = make(%[3]s, %[2]s) }", s.Varname(), size, s.TypeName())
 }
 
 func (p *printer) arrayCheck(want string, got string) {
