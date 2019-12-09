@@ -351,10 +351,13 @@ func ReadInt64Bytes(b []byte) (i int64, o []byte, err error) {
 			return
 		}
 		u := getMuint64(b)
-		if u > math.MaxInt64 {
-			err = UintOverflow{Value: u, FailedBitsize: 64}
-			return
-		}
+		// go-codec compat: uint64 encodings that exceed MaxInt64
+		// just overflow when parsed as int64.
+		//
+		// if u > math.MaxInt64 {
+		// 	err = UintOverflow{Value: u, FailedBitsize: 64}
+		// 	return
+		// }
 		i = int64(u)
 		o = b[9:]
 		return
