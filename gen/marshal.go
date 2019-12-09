@@ -267,7 +267,11 @@ func (m *marshalGen) gMap(s *Map) {
 	}
 	m.fuseHook()
 	vname := s.Varname()
+	m.p.printf("\nif %s == nil {", vname)
+	m.p.printf("\n  o = msgp.AppendNil(o)")
+	m.p.printf("\n} else {")
 	m.rawAppend(mapHeader, lenAsUint32, vname)
+	m.p.printf("\n}")
 
 	m.p.printf("\n%s_keys := make([]%s, 0, len(%s))", s.Keyidx, s.Key.TypeName(), vname)
 	m.p.printf("\nfor %s := range %s {", s.Keyidx, vname)
@@ -292,7 +296,11 @@ func (m *marshalGen) gSlice(s *Slice) {
 	}
 	m.fuseHook()
 	vname := s.Varname()
+	m.p.printf("\nif %s == nil {", vname)
+	m.p.printf("\n  o = msgp.AppendNil(o)")
+	m.p.printf("\n} else {")
 	m.rawAppend(arrayHeader, lenAsUint32, vname)
+	m.p.printf("\n}")
 	m.p.rangeBlock(m.ctx, s.Index, vname, m, s.Els)
 }
 
