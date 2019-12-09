@@ -54,7 +54,7 @@ func IsNil(b []byte) bool {
 // Possible errors:
 // - ErrShortBytes (too few bytes)
 // - TypeError{} (not a map)
-func ReadMapHeaderBytes(b []byte) (sz int, o []byte, err error) {
+func ReadMapHeaderBytes(b []byte) (sz int, isnil bool, o []byte, err error) {
 	l := len(b)
 	if l < 1 {
 		err = ErrShortBytes
@@ -69,10 +69,11 @@ func ReadMapHeaderBytes(b []byte) (sz int, o []byte, err error) {
 	}
 
 	switch lead {
-	// go-codec compatibility: mnil decodes as an empty map/struct
+	// go-codec compatibility: mnil decodes as a nil map / empty struct
 	case mnil:
 		sz = 0
 		o = b[1:]
+		isnil = true
 		return
 
 	case mmap16:
@@ -125,9 +126,9 @@ func ReadMapKeyZC(b []byte) ([]byte, []byte, error) {
 // Possible errors:
 // - ErrShortBytes (too few bytes)
 // - TypeError{} (not an array)
-func ReadArrayHeaderBytes(b []byte) (sz int, o []byte, err error) {
+func ReadArrayHeaderBytes(b []byte) (sz int, isnil bool, o []byte, err error) {
 	if len(b) < 1 {
-		return 0, nil, ErrShortBytes
+		return 0, false, nil, ErrShortBytes
 	}
 	lead := b[0]
 	if isfixarray(lead) {
@@ -138,9 +139,10 @@ func ReadArrayHeaderBytes(b []byte) (sz int, o []byte, err error) {
 
 	switch lead {
 	case mnil:
-		// go-codec compat: nil decodes as an empty array
+		// go-codec compat: nil decodes as an empty array (nil for slice)
 		sz = 0
 		o = b[1:]
+		isnil = true
 		return
 
 	case marray16:

@@ -314,7 +314,7 @@ func (p *printer) declare(name string, typ string) {
 //     for key := range m { delete(m, key) }
 // }
 //
-func (p *printer) resizeMap(size string, m *Map, ctx string) {
+func (p *printer) resizeMap(size string, isnil string, m *Map, ctx string) {
 	vn := m.Varname()
 	if !p.ok() {
 		return
@@ -332,8 +332,10 @@ func (p *printer) resizeMap(size string, m *Map, ctx string) {
 		p.printf("\n}")
 	}
 
-	p.printf("\nif %s == nil {", vn)
-	p.printf("\n%s = make(%s, %s)", vn, m.TypeName(), size)
+	p.printf("\nif %s {", isnil)
+	p.printf("\n  %s = nil", vn)
+	p.printf("\n} else if %s == nil {", vn)
+	p.printf("\n  %s = make(%s, %s)", vn, m.TypeName(), size)
 	p.printf("\n} else if len(%s) > 0 {", vn)
 	p.clearMap(vn)
 	p.closeblock()
@@ -359,7 +361,7 @@ func (p *printer) wrapErrCheck(ctx string) {
 	p.print("\n}")
 }
 
-func (p *printer) resizeSlice(size string, s *Slice, ctx string) {
+func (p *printer) resizeSlice(size string, isnil string, s *Slice, ctx string) {
 	allocbound := s.AllocBound()
 	if allocbound == "" {
 		panic(fmt.Sprintf("Missing allocbound on slice %v", s))
@@ -372,9 +374,13 @@ func (p *printer) resizeSlice(size string, s *Slice, ctx string) {
 		p.printf("\n}")
 	}
 
-	// go-codec compat: allocate a zero-size slice even though nil
-	// is also a reasonable (and more efficient) representation..
-	p.printf("\nif %[1]s != nil && cap(%[1]s) >= %[2]s { %[1]s = (%[1]s)[:%[2]s] } else { %[1]s = make(%[3]s, %[2]s) }", s.Varname(), size, s.TypeName())
+	p.printf("\nif %s {", isnil)
+	p.printf("\n  %s = nil", s.Varname())
+	p.printf("\n} else if cap(%s) >= %s {", s.Varname(), size)
+	p.printf("\n  %[1]s = (%[1]s)[:%[2]s]", s.Varname(), size)
+	p.printf("\n} else {")
+	p.printf("\n  %[1]s = make(%[3]s, %[2]s) }", s.Varname(), size, s.TypeName())
+	p.printf("\n}")
 }
 
 func (p *printer) arrayCheck(want string, got string) {

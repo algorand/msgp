@@ -81,11 +81,11 @@ func (u *unmarshalGen) Execute(p Elem) error {
 }
 
 // does assignment to the variable "name" with the type "base"
-func (u *unmarshalGen) assignAndCheck(name string, base string) {
+func (u *unmarshalGen) assignAndCheck(name string, isnil string, base string) {
 	if !u.p.ok() {
 		return
 	}
-	u.p.printf("\n%s, bts, err = msgp.Read%sBytes(bts)", name, base)
+	u.p.printf("\n%s, %s, bts, err = msgp.Read%sBytes(bts)", name, isnil, base)
 	u.p.wrapErrCheck(u.ctx.ArgsStr())
 }
 
@@ -105,8 +105,10 @@ func (u *unmarshalGen) tuple(s *Struct) {
 
 	// open block
 	sz := randIdent()
+	isnil := randIdent()
 	u.p.declare(sz, "int")
-	u.assignAndCheck(sz, arrayHeader)
+	u.p.declare(isnil, "bool")
+	u.assignAndCheck(sz, isnil, arrayHeader)
 	u.p.arrayCheck(strconv.Itoa(len(s.Fields)), sz)
 	for i := range s.Fields {
 		if !u.p.ok() {
@@ -121,15 +123,17 @@ func (u *unmarshalGen) tuple(s *Struct) {
 func (u *unmarshalGen) mapstruct(s *Struct) {
 	u.needsField()
 	sz := randIdent()
+	isnil := randIdent()
 	u.p.declare(sz, "int")
+	u.p.declare(isnil, "bool")
 
 	// go-codec compat: decode an array as sequential elements from this struct,
 	// in the order they are defined in the Go type (as opposed to canonical
 	// order by sorted tag).
-	u.p.printf("\n%s, bts, err = msgp.Read%sBytes(bts)", sz, mapHeader)
+	u.p.printf("\n%s, %s, bts, err = msgp.Read%sBytes(bts)", sz, isnil, mapHeader)
 	u.p.printf("\nif _, ok := err.(msgp.TypeError); ok {")
 
-	u.assignAndCheck(sz, arrayHeader)
+	u.assignAndCheck(sz, isnil, arrayHeader)
 
 	u.ctx.PushString("struct-from-array")
 	for i := range s.Fields {
@@ -230,8 +234,10 @@ func (u *unmarshalGen) gArray(a *Array) {
 	}
 
 	sz := randIdent()
+	isnil := randIdent()
 	u.p.declare(sz, "int")
-	u.assignAndCheck(sz, arrayHeader)
+	u.p.declare(isnil, "bool")
+	u.assignAndCheck(sz, isnil, arrayHeader)
 	u.p.arrayCheck(coerceArraySize(a.Size), sz)
 	u.p.rangeBlock(u.ctx, a.Index, a.Varname(), u, a.Els)
 }
@@ -241,9 +247,11 @@ func (u *unmarshalGen) gSlice(s *Slice) {
 		return
 	}
 	sz := randIdent()
+	isnil := randIdent()
 	u.p.declare(sz, "int")
-	u.assignAndCheck(sz, arrayHeader)
-	u.p.resizeSlice(sz, s, u.ctx.ArgsStr())
+	u.p.declare(isnil, "bool")
+	u.assignAndCheck(sz, isnil, arrayHeader)
+	u.p.resizeSlice(sz, isnil, s, u.ctx.ArgsStr())
 	u.p.rangeBlock(u.ctx, s.Index, s.Varname(), u, s.Els)
 }
 
@@ -252,11 +260,13 @@ func (u *unmarshalGen) gMap(m *Map) {
 		return
 	}
 	sz := randIdent()
+	isnil := randIdent()
 	u.p.declare(sz, "int")
-	u.assignAndCheck(sz, mapHeader)
+	u.p.declare(isnil, "bool")
+	u.assignAndCheck(sz, isnil, mapHeader)
 
 	// allocate or clear map
-	u.p.resizeMap(sz, m, u.ctx.ArgsStr())
+	u.p.resizeMap(sz, isnil, m, u.ctx.ArgsStr())
 
 	// loop and get key,value
 	u.p.printf("\nfor %s > 0 {", sz)

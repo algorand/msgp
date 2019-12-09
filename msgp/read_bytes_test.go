@@ -16,7 +16,7 @@ func BenchmarkReadMapHeaderBytes(b *testing.B) {
 	b.ResetTimer()
 	o := buf
 	for i := 0; i < b.N; i++ {
-		_, buf, _ = ReadMapHeaderBytes(buf)
+		_, _, buf, _ = ReadMapHeaderBytes(buf)
 		if len(buf) == 0 {
 			buf = o
 		}
@@ -34,7 +34,7 @@ func BenchmarkReadArrayHeaderBytes(b *testing.B) {
 	b.ResetTimer()
 	o := buf
 	for i := 0; i < b.N; i++ {
-		_, buf, _ = ReadArrayHeaderBytes(buf)
+		_, _, buf, _ = ReadArrayHeaderBytes(buf)
 		if len(buf) == 0 {
 			buf = o
 		}
