@@ -44,6 +44,10 @@ func AppendMapHeader(b []byte, sz uint32) []byte {
 // the given size to the slice
 func AppendArrayHeader(b []byte, sz uint32) []byte {
 	switch {
+	// go-codec compat: empty arrays are mnil, not mfixarray(0)
+	case sz == 0:
+		return append(b, mnil)
+
 	case sz <= 15:
 		return append(b, wfixarray(uint8(sz)))
 
