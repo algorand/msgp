@@ -163,6 +163,7 @@ func (m *marshalGen) mapstruct(s *Struct) {
 
 	omitempty := s.AnyHasTagPart("omitempty")
 	var fieldNVar string
+	needCloseBrace := false
 	if omitempty {
 
 		fieldNVar = oeIdentPrefix + "Len"
@@ -194,9 +195,10 @@ func (m *marshalGen) mapstruct(s *Struct) {
 			return
 		}
 
-		// quick return for the case where the entire thing is empty, but only at the top level
+		// quick check for the case where the entire thing is empty, but only at the top level
 		if !strings.Contains(s.Varname(), ".") {
-			m.p.printf("\nif %s == 0 { return }", fieldNVar)
+			m.p.printf("\nif %s != 0 {", fieldNVar)
+			needCloseBrace = true
 		}
 
 	} else {
@@ -243,6 +245,10 @@ func (m *marshalGen) mapstruct(s *Struct) {
 			m.p.printf("\n}") // close if statement
 		}
 
+	}
+
+	if needCloseBrace {
+		m.p.printf("\n}")
 	}
 }
 
