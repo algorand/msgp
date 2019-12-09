@@ -977,7 +977,12 @@ func ReadStringZC(b []byte) (v []byte, o []byte, err error) {
 			b = b[5:]
 
 		default:
-			err = TypeError{Method: StrType, Encoded: getType(lead)}
+			// go-codec compat: decode bin types into string
+			v, o, err = readBytesBytes(b, nil, true)
+			if err != nil {
+				// If the fallback fails, return original error code
+				err = TypeError{Method: StrType, Encoded: getType(lead)}
+			}
 			return
 		}
 	}
