@@ -376,7 +376,7 @@ func (p *printer) resizeSlice(size string, isnil string, s *Slice, ctx string) {
 
 	p.printf("\nif %s {", isnil)
 	p.printf("\n  %s = nil", s.Varname())
-	p.printf("\n} else if cap(%s) >= %s {", s.Varname(), size)
+	p.printf("\n} else if %[1]s != nil && cap(%[1]s) >= %[2]s {", s.Varname(), size)
 	p.printf("\n  %[1]s = (%[1]s)[:%[2]s]", s.Varname(), size)
 	p.printf("\n} else {")
 	p.printf("\n  %[1]s = make(%[3]s, %[2]s)", s.Varname(), size, s.TypeName())
