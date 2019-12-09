@@ -592,43 +592,77 @@ func readBytesBytes(b []byte, scratch []byte, zc bool) (v []byte, o []byte, err 
 
 	lead := b[0]
 	var read int
-	switch lead {
-	case mnil:
-		v = nil
-		o = b[1:]
-		return
 
-	case mbin8:
-		if l < 2 {
-			err = ErrShortBytes
+	// go-codec compat: decode string encodings into byte arrays
+
+	if isfixstr(lead) {
+		read = int(rfixstr(lead))
+		b = b[1:]
+	} else {
+		switch lead {
+		case mstr8:
+			if l < 2 {
+				err = ErrShortBytes
+				return
+			}
+			read = int(b[1])
+			b = b[2:]
+
+		case mstr16:
+			if l < 3 {
+				err = ErrShortBytes
+				return
+			}
+			read = int(big.Uint16(b[1:]))
+			b = b[3:]
+
+		case mstr32:
+			if l < 5 {
+				err = ErrShortBytes
+				return
+			}
+			read, err = u32int(big.Uint32(b[1:]))
+			if err != nil {
+				return
+			}
+			b = b[5:]
+
+		case mnil:
+			v = nil
+			o = b[1:]
+			return
+
+		case mbin8:
+			if l < 2 {
+				err = ErrShortBytes
+				return
+			}
+			read = int(b[1])
+			b = b[2:]
+
+		case mbin16:
+			if l < 3 {
+				err = ErrShortBytes
+				return
+			}
+			read = int(big.Uint16(b[1:]))
+			b = b[3:]
+
+		case mbin32:
+			if l < 5 {
+				err = ErrShortBytes
+				return
+			}
+			read, err = u32int(big.Uint32(b[1:]))
+			if err != nil {
+				return
+			}
+			b = b[5:]
+
+		default:
+			err = badPrefix(BinType, lead)
 			return
 		}
-
-		read = int(b[1])
-		b = b[2:]
-
-	case mbin16:
-		if l < 3 {
-			err = ErrShortBytes
-			return
-		}
-		read = int(big.Uint16(b[1:]))
-		b = b[3:]
-
-	case mbin32:
-		if l < 5 {
-			err = ErrShortBytes
-			return
-		}
-		read, err = u32int(big.Uint32(b[1:]))
-		if err != nil {
-			return
-		}
-		b = b[5:]
-
-	default:
-		err = badPrefix(BinType, lead)
-		return
 	}
 
 	if len(b) < read {
@@ -675,50 +709,94 @@ func ReadExactBytes(b []byte, into []byte) (o []byte, err error) {
 	lead := b[0]
 	var read int
 	var skip int
-	switch lead {
-	case mbin8:
-		if l < 2 {
-			err = ErrShortBytes
+
+	// go-codec compat: decode string encodings into byte arrays
+
+	if isfixstr(lead) {
+		read = int(rfixstr(lead))
+		skip = 1
+	} else {
+		switch lead {
+		case mstr8:
+			if l < 2 {
+				err = ErrShortBytes
+				return
+			}
+			read = int(b[1])
+			skip = 2
+
+		case mstr16:
+			if l < 3 {
+				err = ErrShortBytes
+				return
+			}
+			read = int(big.Uint16(b[1:]))
+			skip = 3
+
+		case mstr32:
+			if l < 5 {
+				err = ErrShortBytes
+				return
+			}
+			read, err = u32int(big.Uint32(b[1:]))
+			if err != nil {
+				return
+			}
+			skip = 5
+
+		case mnil:
+			read = 0
+			skip = 1
+
+		case mbin8:
+			if l < 2 {
+				err = ErrShortBytes
+				return
+			}
+			read = int(b[1])
+			skip = 2
+
+		case mbin16:
+			if l < 3 {
+				err = ErrShortBytes
+				return
+			}
+			read = int(big.Uint16(b[1:]))
+			skip = 3
+
+		case mbin32:
+			if l < 5 {
+				err = ErrShortBytes
+				return
+			}
+			read, err = u32int(big.Uint32(b[1:]))
+			if err != nil {
+				return
+			}
+			skip = 5
+
+		default:
+			err = badPrefix(BinType, lead)
 			return
 		}
-
-		read = int(b[1])
-		skip = 2
-
-	case mbin16:
-		if l < 3 {
-			err = ErrShortBytes
-			return
-		}
-		read = int(big.Uint16(b[1:]))
-		skip = 3
-
-	case mbin32:
-		if l < 5 {
-			err = ErrShortBytes
-			return
-		}
-		read, err = u32int(big.Uint32(b[1:]))
-		if err != nil {
-			return
-		}
-		skip = 5
-
-	default:
-		err = badPrefix(BinType, lead)
-		return
 	}
 
-	if read != len(into) {
-		err = ArrayError{Wanted: uint32(len(into)), Got: uint32(read)}
-		return
-	}
+	// go-codec compat: allow decoding a different number of bytes than the
+	// size of the fixed array; take the min of the size of the Go type and
+	// the encoded array size.
+	//
+	// if read != len(into) {
+	// 	err = ArrayError{Wanted: uint32(len(into)), Got: uint32(read)}
+	// 	return
+	// }
+
 	if read > len(b[skip:]) {
 		err = ErrShortBytes
 		return
 	}
 
-	o = b[skip+copy(into, b[skip:]):]
+	copy(into, b[skip:skip+read])
+	o = b[skip+read:]
 	return
 }
 
