@@ -151,8 +151,7 @@ func (u *unmarshalGen) mapstruct(s *Struct) {
 	u.p.printf("\n}")
 	u.ctx.Pop()
 
-	u.p.printf("\nreturn")
-	u.p.printf("\n}")
+	u.p.printf("\n} else {")
 	u.p.wrapErrCheck(u.ctx.ArgsStr())
 
 	u.p.printf("\nfor %s > 0 {", sz)
@@ -174,7 +173,9 @@ func (u *unmarshalGen) mapstruct(s *Struct) {
 	}
 	u.p.print("\ndefault:\nerr = msgp.ErrNoField(string(field))")
 	u.p.wrapErrCheck(u.ctx.ArgsStr())
-	u.p.print("\n}\n}") // close switch and for loop
+	u.p.print("\n}") // close switch
+	u.p.print("\n}") // close for loop
+	u.p.print("\n}") // close else statement for array decode
 }
 
 func (u *unmarshalGen) gBase(b *BaseElem) {
