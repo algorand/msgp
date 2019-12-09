@@ -863,6 +863,12 @@ func ReadExactBytes(b []byte, into []byte) (o []byte, err error) {
 			skip = 5
 
 		case mnil:
+			// go-codec compat: decoding nil into an array clears the array;
+			// different from decoding a zero-length array (which updates
+			// in-place).
+			for i := range into {
+				into[i] = 0
+			}
 			read = 0
 			skip = 1
 
