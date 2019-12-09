@@ -332,12 +332,14 @@ func (p *printer) resizeMap(size string, isnil string, m *Map, ctx string) {
 		p.printf("\n}")
 	}
 
+	// go-codec compat: nil clears map, but if a map already exists
+	// (e.g., because we are decoding the same key twice), then keep
+	// the map as-is.
+
 	p.printf("\nif %s {", isnil)
 	p.printf("\n  %s = nil", vn)
 	p.printf("\n} else if %s == nil {", vn)
 	p.printf("\n  %s = make(%s, %s)", vn, m.TypeName(), size)
-	p.printf("\n} else if len(%s) > 0 {", vn)
-	p.clearMap(vn)
 	p.closeblock()
 }
 
