@@ -26,15 +26,15 @@ type mtestGen struct {
 	w io.Writer
 }
 
-func (m *mtestGen) Execute(p Elem) error {
+func (m *mtestGen) Execute(p Elem) ([]string, error) {
 	p = m.applyall(p)
 	if p != nil && !IsDangling(p) {
 		switch p.(type) {
 		case *Struct, *Array, *Slice, *Map:
-			return marshalTestTempl.Execute(m.w, p)
+			return nil, marshalTestTempl.Execute(m.w, p)
 		}
 	}
-	return nil
+	return nil, nil
 }
 
 func (m *mtestGen) Method() Method { return marshaltest }

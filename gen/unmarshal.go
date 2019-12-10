@@ -17,6 +17,7 @@ type unmarshalGen struct {
 	p        printer
 	hasfield bool
 	ctx      *Context
+	msgs     []string
 }
 
 func (u *unmarshalGen) Method() Method { return Unmarshal }
@@ -29,14 +30,15 @@ func (u *unmarshalGen) needsField() {
 	u.hasfield = true
 }
 
-func (u *unmarshalGen) Execute(p Elem) error {
+func (u *unmarshalGen) Execute(p Elem) ([]string, error) {
+	u.msgs = nil
 	u.hasfield = false
 	if !u.p.ok() {
-		return u.p.err
+		return u.msgs, u.p.err
 	}
 	p = u.applyall(p)
 	if p == nil {
-		return nil
+		return u.msgs, nil
 	}
 
 	// We might change p.Varname in methodReceiver(); make a copy
@@ -60,7 +62,7 @@ func (u *unmarshalGen) Execute(p Elem) error {
 		u.p.printf("\n  return ok")
 		u.p.printf("\n}")
 
-		return u.p.err
+		return u.msgs, u.p.err
 	}
 
 	// save the vname before calling methodReceiver
@@ -77,7 +79,7 @@ func (u *unmarshalGen) Execute(p Elem) error {
 	u.p.printf("\n  return ok")
 	u.p.printf("\n}")
 
-	return u.p.err
+	return u.msgs, u.p.err
 }
 
 // does assignment to the variable "name" with the type "base"
@@ -260,7 +262,8 @@ func (u *unmarshalGen) gSlice(s *Slice) {
 	u.p.declare(sz, "int")
 	u.p.declare(isnil, "bool")
 	u.assignAndCheck(sz, isnil, arrayHeader)
-	u.p.resizeSlice(sz, isnil, s, u.ctx.ArgsStr())
+	resizemsgs := u.p.resizeSlice(sz, isnil, s, u.ctx.ArgsStr())
+	u.msgs = append(u.msgs, resizemsgs...)
 	u.p.rangeBlock(u.ctx, s.Index, s.Varname(), u, s.Els)
 }
 
@@ -275,7 +278,8 @@ func (u *unmarshalGen) gMap(m *Map) {
 	u.assignAndCheck(sz, isnil, mapHeader)
 
 	// allocate or clear map
-	u.p.resizeMap(sz, isnil, m, u.ctx.ArgsStr())
+	resizemsgs := u.p.resizeMap(sz, isnil, m, u.ctx.ArgsStr())
+	u.msgs = append(u.msgs, resizemsgs...)
 
 	// loop and get key,value
 	u.p.printf("\nfor %s > 0 {", sz)

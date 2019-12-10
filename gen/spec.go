@@ -144,21 +144,25 @@ func (p *Printer) ApplyDirective(pass Method, t TransformPass) {
 }
 
 // Print prints an Elem.
-func (p *Printer) Print(e Elem) error {
+func (p *Printer) Print(e Elem) ([]string, error) {
+	var msgs []string
+
 	for _, g := range p.gens {
 		// Elem.SetVarname() is called before the Print() step in parse.FileSet.PrintTo().
 		// Elem.SetVarname() generates identifiers as it walks the Elem. This can cause
 		// collisions between idents created during SetVarname and idents created during Print,
 		// hence the separate prefixes.
 		resetIdent("zb")
-		err := g.Execute(e)
+		m, err := g.Execute(e)
 		resetIdent("za")
 
 		if err != nil {
-			return err
+			return nil, err
 		}
+
+		msgs = append(msgs, m...)
 	}
-	return nil
+	return msgs, nil
 }
 
 type contextItem interface {
@@ -209,7 +213,7 @@ func (c *Context) ArgsStr() string {
 type generator interface {
 	Method() Method
 	Add(p TransformPass)
-	Execute(Elem) error // execute writes the method for the provided object.
+	Execute(Elem) ([]string, error) // execute writes the method for the provided object.
 }
 
 type passes []TransformPass
@@ -314,15 +318,15 @@ func (p *printer) declare(name string, typ string) {
 //     for key := range m { delete(m, key) }
 // }
 //
-func (p *printer) resizeMap(size string, isnil string, m *Map, ctx string) {
+func (p *printer) resizeMap(size string, isnil string, m *Map, ctx string) []string {
 	vn := m.Varname()
 	if !p.ok() {
-		return
+		return nil
 	}
 
 	allocbound := m.AllocBound()
 	if allocbound == "" {
-		panic(fmt.Sprintf("Missing allocbound on map %v", m))
+		return []string{fmt.Sprintf("Missing allocbound on map %v", m)}
 	}
 	if allocbound != "-" {
 		p.printf("\nif %s > %s {", size, allocbound)
@@ -341,6 +345,8 @@ func (p *printer) resizeMap(size string, isnil string, m *Map, ctx string) {
 	p.printf("\n} else if %s == nil {", vn)
 	p.printf("\n  %s = make(%s, %s)", vn, m.TypeName(), size)
 	p.closeblock()
+
+	return nil
 }
 
 // assign key to value based on varnames
@@ -363,10 +369,10 @@ func (p *printer) wrapErrCheck(ctx string) {
 	p.print("\n}")
 }
 
-func (p *printer) resizeSlice(size string, isnil string, s *Slice, ctx string) {
+func (p *printer) resizeSlice(size string, isnil string, s *Slice, ctx string) []string {
 	allocbound := s.AllocBound()
 	if allocbound == "" {
-		panic(fmt.Sprintf("Missing allocbound on slice %v", s))
+		return []string{fmt.Sprintf("Missing allocbound on slice %v", s)}
 	}
 	if allocbound != "-" {
 		p.printf("\nif %s > %s {", size, allocbound)
@@ -383,6 +389,8 @@ func (p *printer) resizeSlice(size string, isnil string, s *Slice, ctx string) {
 	p.printf("\n} else {")
 	p.printf("\n  %[1]s = make(%[3]s, %[2]s)", s.Varname(), size, s.TypeName())
 	p.printf("\n}")
+
+	return nil
 }
 
 func (p *printer) arrayCheck(want string, got string) {

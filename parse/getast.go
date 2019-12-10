@@ -277,6 +277,8 @@ loop:
 }
 
 func (f *FileSet) PrintTo(p *gen.Printer) error {
+	var msgs []string
+
 	f.applyDirs(p)
 	names := make([]string, 0, len(f.Identities))
 	for name := range f.Identities {
@@ -287,11 +289,18 @@ func (f *FileSet) PrintTo(p *gen.Printer) error {
 		el := f.Identities[name]
 		el.SetVarname("z")
 		pushstate(el.TypeName())
-		err := p.Print(el)
+		m, err := p.Print(el)
 		popstate()
 		if err != nil {
 			return err
 		}
+		msgs = append(msgs, m...)
+	}
+	for _, msg := range msgs {
+		warnln(msg)
+	}
+	if len(msgs) > 0 {
+		return fmt.Errorf("Errors encountered, exiting")
 	}
 	return nil
 }

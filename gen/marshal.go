@@ -21,6 +21,7 @@ type marshalGen struct {
 	p    printer
 	fuse []byte
 	ctx  *Context
+	msgs []string
 }
 
 func (m *marshalGen) Method() Method { return Marshal }
@@ -29,13 +30,14 @@ func (m *marshalGen) Apply(dirs []string) error {
 	return nil
 }
 
-func (m *marshalGen) Execute(p Elem) error {
+func (m *marshalGen) Execute(p Elem) ([]string, error) {
+	m.msgs = nil
 	if !m.p.ok() {
-		return m.p.err
+		return m.msgs, m.p.err
 	}
 	p = m.applyall(p)
 	if p == nil {
-		return nil
+		return m.msgs, nil
 	}
 
 	// We might change p.Varname in methodReceiver(); make a copy
@@ -59,7 +61,7 @@ func (m *marshalGen) Execute(p Elem) error {
 		m.p.printf("\n  return ok")
 		m.p.printf("\n}")
 
-		return m.p.err
+		return m.msgs, m.p.err
 	}
 
 	// save the vname before
@@ -78,7 +80,7 @@ func (m *marshalGen) Execute(p Elem) error {
 	m.p.printf("\n  return ok")
 	m.p.printf("\n}")
 
-	return m.p.err
+	return m.msgs, m.p.err
 }
 
 func (m *marshalGen) rawAppend(typ string, argfmt string, arg interface{}) {
@@ -138,7 +140,8 @@ func (m *marshalGen) mapstruct(s *Struct) {
 	// also be blank, if for some reason omitempty is not desired.  This
 	// check guards against developers forgetting to specify omitempty.
 	if !s.HasUnderscoreStructTag() {
-		panic(fmt.Sprintf("Missing _struct annotation on struct %v", s))
+		m.msgs = append(m.msgs, fmt.Sprintf("Missing _struct annotation on struct %v", s))
+		return
 	}
 
 	sortedFields := append([]StructField(nil), s.Fields...)

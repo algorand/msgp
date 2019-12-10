@@ -70,13 +70,13 @@ func (s *sizeGen) addConstant(sz string) {
 	panic("unknown size state")
 }
 
-func (s *sizeGen) Execute(p Elem) error {
+func (s *sizeGen) Execute(p Elem) ([]string, error) {
 	if !s.p.ok() {
-		return s.p.err
+		return nil, s.p.err
 	}
 	p = s.applyall(p)
 	if p == nil {
-		return nil
+		return nil, nil
 	}
 
 	// We might change p.Varname in methodReceiver(); make a copy
@@ -91,7 +91,7 @@ func (s *sizeGen) Execute(p Elem) error {
 		s.p.printf("\nfunc (%s %s) Msgsize() int {", p.Varname(), methodReceiver(p))
 		s.p.printf("\n  return ((*(%s))(%s)).Msgsize()", baseType, ptrName)
 		s.p.printf("\n}")
-		return s.p.err
+		return nil, s.p.err
 	}
 
 	s.ctx = &Context{}
@@ -101,7 +101,7 @@ func (s *sizeGen) Execute(p Elem) error {
 	s.state = assign
 	next(s, p)
 	s.p.nakedReturn()
-	return s.p.err
+	return nil, s.p.err
 }
 
 func (s *sizeGen) gStruct(st *Struct) {

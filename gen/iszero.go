@@ -22,13 +22,13 @@ func (s *isZeroGen) Apply(dirs []string) error {
 	return nil
 }
 
-func (s *isZeroGen) Execute(p Elem) error {
+func (s *isZeroGen) Execute(p Elem) ([]string, error) {
 	if !s.p.ok() {
-		return s.p.err
+		return nil, s.p.err
 	}
 	p = s.applyall(p)
 	if p == nil {
-		return nil
+		return nil, nil
 	}
 
 	// We might change p.Varname in methodReceiver(); make a copy
@@ -46,7 +46,7 @@ func (s *isZeroGen) Execute(p Elem) error {
 		s.p.printf("\nfunc (%s %s) MsgIsZero() bool {", p.Varname(), methodReceiver(p))
 		s.p.printf("\n  return ((*(%s))(%s)).MsgIsZero()", baseType, ptrName)
 		s.p.printf("\n}")
-		return s.p.err
+		return nil, s.p.err
 	}
 
 	s.p.printf("\nfunc (%s %s) MsgIsZero() bool {", p.Varname(), imutMethodReceiver(p))
@@ -56,5 +56,5 @@ func (s *isZeroGen) Execute(p Elem) error {
 	}
 	s.p.printf("\nreturn %s", ize)
 	s.p.printf("\n}")
-	return s.p.err
+	return nil, s.p.err
 }
