@@ -596,12 +596,24 @@ func (s *Struct) UnderscoreStructHasTagPart(pname string) bool {
 	return false
 }
 
+// HasAnyStructTag returns true if any of the fields in the struct have
+// a codec: tag.  This is used to determine which structs we can skip
+// because they are not intended for encoding/decoding.
+func (s *Struct) HasAnyStructTag() bool {
+	for _, sf := range s.Fields {
+		if sf.HasCodecTag {
+			return true
+		}
+	}
+	return false
+}
+
 // HasUnderscoreStructTag returns true if there is a field named _struct
 // with a codec: tag.  This is used to ensure developers don't forget to
 // annotate their structs with omitempty (unless explicitly opted out).
 func (s *Struct) HasUnderscoreStructTag() bool {
 	for _, sf := range s.Fields {
-		if sf.FieldName == "_struct" && sf.FieldTagParts != nil {
+		if sf.FieldName == "_struct" && sf.HasCodecTag {
 			return true
 		}
 	}
@@ -612,6 +624,7 @@ type StructField struct {
 	FieldTag      string   // the string inside the `codec:""` tag up to the first comma
 	FieldTagParts []string // the string inside the `codec:""` tag split by commas
 	RawTag        string   // the full struct tag
+	HasCodecTag   bool     // has a `codec:` tag
 	FieldName     string   // the name of the struct field
 	FieldElem     Elem     // the field type
 	FieldPath     []string // set of embedded struct names for accessing FieldName

@@ -396,7 +396,8 @@ func (fs *FileSet) getField(f *ast.Field) []gen.StructField {
 
 	// parse tag; otherwise field name is field tag
 	if f.Tag != nil {
-		body := reflect.StructTag(strings.Trim(f.Tag.Value, "`")).Get("codec")
+		var body string
+		body, sf[0].HasCodecTag = reflect.StructTag(strings.Trim(f.Tag.Value, "`")).Lookup("codec")
 		tags := strings.Split(body, ",")
 		for _, tag := range tags[1:] {
 			if tag == "extension" {

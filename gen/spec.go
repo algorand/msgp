@@ -145,6 +145,12 @@ func (p *Printer) ApplyDirective(pass Method, t TransformPass) {
 
 // Print prints an Elem.
 func (p *Printer) Print(e Elem) ([]string, error) {
+	// If the elem is a struct and has no _struct annotations, skip it.
+	es, ok := e.(*Struct)
+	if ok && !es.HasAnyStructTag() {
+		return nil, nil
+	}
+
 	var msgs []string
 
 	for _, g := range p.gens {
