@@ -107,10 +107,8 @@ func (u *unmarshalGen) tuple(s *Struct) {
 
 	// open block
 	sz := randIdent()
-	isnil := randIdent()
 	u.p.declare(sz, "int")
-	u.p.declare(isnil, "bool")
-	u.assignAndCheck(sz, isnil, arrayHeader)
+	u.assignAndCheck(sz, "_", arrayHeader)
 	u.p.arrayCheck(strconv.Itoa(len(s.Fields)), sz)
 	for i := range s.Fields {
 		if !u.p.ok() {
@@ -240,10 +238,8 @@ func (u *unmarshalGen) gArray(a *Array) {
 	}
 
 	sz := randIdent()
-	isnil := randIdent()
 	u.p.declare(sz, "int")
-	u.p.declare(isnil, "bool")
-	u.assignAndCheck(sz, isnil, arrayHeader)
+	u.assignAndCheck(sz, "_", arrayHeader)
 	u.p.arrayCheckBound(a.Size, sz)
 
 	u.ctx.PushVar(a.Index)
