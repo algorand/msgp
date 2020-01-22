@@ -7,7 +7,6 @@ import (
 
 var (
 	marshalTestTempl = template.New("MarshalTest")
-	encodeTestTempl  = template.New("EncodeTest")
 )
 
 // TODO(philhofer):
@@ -63,6 +62,10 @@ func init() {
 	}
 }
 
+func TestRandomizedEncoding{{.TypeName}}(t *testing.T) {
+	protocol.RunEncodingTest(t, &{{.TypeName}}{})
+}
+
 func BenchmarkMarshalMsg{{.TypeName}}(b *testing.B) {
 	v := {{.TypeName}}{}
 	b.ReportAllocs()
@@ -93,63 +96,6 @@ func BenchmarkUnmarshal{{.TypeName}}(b *testing.B) {
 	for i:=0; i<b.N; i++ {
 		_, err := v.UnmarshalMsg(bts)
 		if err != nil {
-			b.Fatal(err)
-		}
-	}
-}
-
-`))
-
-	template.Must(encodeTestTempl.Parse(`func TestEncodeDecode{{.TypeName}}(t *testing.T) {
-	v := {{.TypeName}}{}
-	var buf bytes.Buffer
-	msgp.Encode(&buf, &v)
-
-	m := v.Msgsize()
-	if buf.Len() > m {
-		t.Log("WARNING: TestEncodeDecode{{.TypeName}} Msgsize() is inaccurate")
-	}
-
-	vn := {{.TypeName}}{}
-	err := msgp.Decode(&buf, &vn)
-	if err != nil {
-		t.Error(err)
-	}
-
-	buf.Reset()
-	msgp.Encode(&buf, &v)
-	err = msgp.NewReader(&buf).Skip()
-	if err != nil {
-		t.Error(err)
-	}
-}
-
-func BenchmarkEncode{{.TypeName}}(b *testing.B) {
-	v := {{.TypeName}}{}
-	var buf bytes.Buffer 
-	msgp.Encode(&buf, &v)
-	b.SetBytes(int64(buf.Len()))
-	en := msgp.NewWriter(msgp.Nowhere)
-	b.ReportAllocs()
-	b.ResetTimer()
-	for i:=0; i<b.N; i++ {
-		v.EncodeMsg(en)
-	}
-	en.Flush()
-}
-
-func BenchmarkDecode{{.TypeName}}(b *testing.B) {
-	v := {{.TypeName}}{}
-	var buf bytes.Buffer
-	msgp.Encode(&buf, &v)
-	b.SetBytes(int64(buf.Len()))
-	rd := msgp.NewEndlessReader(buf.Bytes(), b)
-	dc := msgp.NewReader(rd)
-	b.ReportAllocs()
-	b.ResetTimer()
-	for i:=0; i<b.N; i++ {
-		err := v.DecodeMsg(dc)
-		if  err != nil {
 			b.Fatal(err)
 		}
 	}
