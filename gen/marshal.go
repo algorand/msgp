@@ -133,6 +133,19 @@ func (m *marshalGen) tuple(s *Struct) {
 	}
 }
 
+func isFieldOmitEmpty(sf StructField, s *Struct) bool {
+	tagName := "omitempty"
+
+	// go-codec distinguished between omitempty and omitemptyarray
+	e := sf.FieldElem
+	_, isArray := e.(*Array)
+	if isArray {
+		tagName = "omitemptyarray"
+	}
+
+	return sf.HasTagPart(tagName) || s.UnderscoreStructHasTagPart(tagName)
+}
+
 func (m *marshalGen) mapstruct(s *Struct) {
 
 	// Every struct must have a _struct annotation with a codec: tag.
@@ -183,7 +196,7 @@ func (m *marshalGen) mapstruct(s *Struct) {
 				continue
 			}
 
-			fieldOmitEmpty := sf.HasTagPart("omitempty") || s.UnderscoreStructHasTagPart("omitempty")
+			fieldOmitEmpty := isFieldOmitEmpty(sf, s)
 			if ize := sf.FieldElem.IfZeroExpr(); ize != "" && fieldOmitEmpty {
 				m.p.printf("\nif %s {", ize)
 				m.p.printf("\n%s--", fieldNVar)
@@ -226,7 +239,7 @@ func (m *marshalGen) mapstruct(s *Struct) {
 			return
 		}
 
-		fieldOmitEmpty := sf.HasTagPart("omitempty") || s.UnderscoreStructHasTagPart("omitempty")
+		fieldOmitEmpty := isFieldOmitEmpty(sf, s)
 
 		// if field is omitempty, wrap with if statement based on the emptymask
 		oeField := fieldOmitEmpty && sf.FieldElem.IfZeroExpr() != ""
