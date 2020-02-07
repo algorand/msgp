@@ -180,13 +180,13 @@ func (m *marshalGen) mapstruct(s *Struct) {
 	omitempty := s.AnyHasTagPart("omitempty")
 	var fieldNVar string
 	needCloseBrace := false
+	needBmDecl := true
 	if omitempty {
 
 		fieldNVar = oeIdentPrefix + "Len"
 
 		m.p.printf("\n// omitempty: check for empty values")
 		m.p.printf("\n%s := uint32(%d)", fieldNVar, exportedFields)
-		m.p.printf("\n%s", bm.typeDecl())
 		for i, sf := range sortedFields {
 			if !m.p.ok() {
 				return
@@ -198,6 +198,11 @@ func (m *marshalGen) mapstruct(s *Struct) {
 
 			fieldOmitEmpty := isFieldOmitEmpty(sf, s)
 			if ize := sf.FieldElem.IfZeroExpr(); ize != "" && fieldOmitEmpty {
+				if needBmDecl {
+					m.p.printf("\n%s", bm.typeDecl())
+					needBmDecl = false
+				}
+
 				m.p.printf("\nif %s {", ize)
 				m.p.printf("\n%s--", fieldNVar)
 				m.p.printf("\n%s", bm.setStmt(i))
