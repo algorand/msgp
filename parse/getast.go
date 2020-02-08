@@ -61,6 +61,11 @@ func File(name string, unexported bool) (*FileSet, error) {
 	imps := make(map[string]*FileSet)
 
 	fs := packageToFileSet(one, imps, unexported)
+	for _, ifs := range imps {
+		ifs.process()
+		ifs.applyDirectives()
+		ifs.propInline()
+	}
 	fs.process()
 	fs.applyDirectives()
 	fs.propInline()
@@ -498,6 +503,24 @@ func (fs *FileSet) getFieldsFromEmbeddedStruct(f ast.Expr) []gen.StructField {
 		default:
 			return nil
 		}
+	case *ast.SelectorExpr:
+		pkg := f.X
+		pkgid, ok := pkg.(*ast.Ident)
+		if !ok {
+			return nil
+		}
+
+		pkgname, ok := fs.ImportName[pkgid.Name]
+		if !ok {
+			return nil
+		}
+
+		pkgfs, ok := fs.ImportSet[pkgname]
+		if !ok {
+			return nil
+		}
+
+		return pkgfs.getFieldsFromEmbeddedStruct(f.Sel)
 	default:
 		// other possibilities are disallowed
 		return nil
