@@ -83,6 +83,7 @@ const (
 	Uint16
 	Uint32
 	Uint64
+	Uintptr
 	Byte
 	Int
 	Int8
@@ -90,9 +91,10 @@ const (
 	Int32
 	Int64
 	Bool
-	Intf // interface{}
-	Time // time.Time
-	Ext  // extension
+	Intf  // interface{}
+	Time  // time.Time
+	Ext   // extension
+	Error // error
 
 	IDENT // IDENT means an unrecognized identifier
 )
@@ -111,6 +113,7 @@ var primitives = map[string]Primitive{
 	"uint16":         Uint16,
 	"uint32":         Uint32,
 	"uint64":         Uint64,
+	"uintptr":        Uintptr,
 	"byte":           Byte,
 	"rune":           Int32,
 	"int":            Int,
@@ -122,6 +125,7 @@ var primitives = map[string]Primitive{
 	"interface{}":    Intf,
 	"time.Time":      Time,
 	"msgp.Extension": Ext,
+	"error":	  Error,
 }
 
 // types built into the library
