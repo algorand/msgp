@@ -16,6 +16,7 @@ import (
 // parsed file.
 type FileSet struct {
 	Package    string              // package name
+	PkgPath    string              // package path
 	Specs      map[string]ast.Expr // type specs in file
 	Aliases    map[string]ast.Expr // type aliases in file
 	Consts     map[string]ast.Expr // consts
@@ -35,7 +36,7 @@ type ImportSet map[string]*FileSet
 // directory will be parsed.
 // If unexport is false, only exported identifiers are included in the FileSet.
 // If the resulting FileSet would be empty, an error is returned.
-func File(name string, unexported bool) (*FileSet, error) {
+func File(name string, unexported bool, warnPkgMask string) (*FileSet, error) {
 	pushstate(name)
 	defer popstate()
 
@@ -62,11 +63,11 @@ func File(name string, unexported bool) (*FileSet, error) {
 
 	fs := packageToFileSet(one, imps, unexported)
 	for _, ifs := range imps {
-		ifs.process()
+		ifs.process(warnPkgMask)
 		ifs.applyDirectives()
 		ifs.propInline()
 	}
-	fs.process()
+	fs.process(warnPkgMask)
 	fs.applyDirectives()
 	fs.propInline()
 	return fs, nil
@@ -75,6 +76,7 @@ func File(name string, unexported bool) (*FileSet, error) {
 func packageToFileSet(p *packages.Package, imps map[string]*FileSet, unexported bool) *FileSet {
 	fs := &FileSet{
 		Package:    p.Name,
+		PkgPath:    p.PkgPath,
 		Specs:      make(map[string]ast.Expr),
 		Aliases:    make(map[string]ast.Expr),
 		Consts:     make(map[string]ast.Expr),
@@ -203,13 +205,18 @@ func (f *FileSet) resolve(ls linkset) {
 
 // process takes the contents of f.Specs and
 // uses them to populate f.Identities
-func (f *FileSet) process() {
-
+func (f *FileSet) process(warnPkgMask string) {
+	if warnPkgMask != "" && !strings.HasPrefix(f.PkgPath, warnPkgMask) {
+		increasePrintLevel()
+		defer decreasePrintLevel()
+	}
 	deferred := make(linkset)
 parse:
 	for name, def := range f.Specs {
 		pushstate(name)
+
 		el := f.parseExpr(def)
+
 		if el == nil {
 			warnln("failed to parse")
 			popstate()
@@ -709,35 +716,58 @@ func (fs *FileSet) parseExpr(e ast.Expr) gen.Elem {
 
 func infof(s string, v ...interface{}) {
 	pushstate(s)
-	fmt.Printf(chalk.Green.Color(strings.Join(logctx, ": ")), v...)
+	if print(0) {
+		fmt.Printf(chalk.Green.Color(strings.Join(logctx, ": ")), v...)
+	}
 	popstate()
 }
 
 func infoln(s string) {
 	pushstate(s)
-	fmt.Println(chalk.Green.Color(strings.Join(logctx, ": ")))
+	if print(0) {
+		fmt.Println(chalk.Green.Color(strings.Join(logctx, ": ")))
+	}
 	popstate()
 }
 
 func warnf(s string, v ...interface{}) {
 	pushstate(s)
-	fmt.Printf(chalk.Yellow.Color(strings.Join(logctx, ": ")), v...)
+	if print(1) {
+		fmt.Printf(chalk.Yellow.Color(strings.Join(logctx, ": ")), v...)
+	}
 	popstate()
 }
 
 func warnln(s string) {
 	pushstate(s)
-	fmt.Println(chalk.Yellow.Color(strings.Join(logctx, ": ")))
+	if print(1) {
+		fmt.Println(chalk.Yellow.Color(strings.Join(logctx, ": ")))
+	}
 	popstate()
 }
 
 func fatalf(s string, v ...interface{}) {
 	pushstate(s)
-	fmt.Printf(chalk.Red.Color(strings.Join(logctx, ": ")), v...)
+	if print(2) {
+		fmt.Printf(chalk.Red.Color(strings.Join(logctx, ": ")), v...)
+	}
 	popstate()
 }
 
 var logctx []string
+var printlevel int
+
+func increasePrintLevel() {
+	printlevel++
+}
+
+func decreasePrintLevel() {
+	printlevel--
+}
+
+func print(level int) bool {
+	return printlevel < level
+}
 
 // push logging state
 func pushstate(s string) {

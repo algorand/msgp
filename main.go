@@ -36,12 +36,13 @@ import (
 )
 
 var (
-	out        = flag.String("o", "", "output file")
-	file       = flag.String("file", "", "input file")
-	marshal    = flag.Bool("marshal", true, "create Marshal and Unmarshal methods")
-	tests      = flag.Bool("tests", true, "create tests and benchmarks")
-	unexported = flag.Bool("unexported", true, "also process unexported types")
-	skipFormat = flag.Bool("skip-format", false, "skip formatting the generated code (for debug)")
+	out         = flag.String("o", "", "output file")
+	file        = flag.String("file", "", "input file")
+	marshal     = flag.Bool("marshal", true, "create Marshal and Unmarshal methods")
+	tests       = flag.Bool("tests", true, "create tests and benchmarks")
+	unexported  = flag.Bool("unexported", true, "also process unexported types")
+	skipFormat  = flag.Bool("skip-format", false, "skip formatting the generated code (for debug)")
+	warnPkgMask = flag.String("warnmask", "", "skip generating warnings on datatypes outside given package")
 )
 
 func main() {
@@ -69,7 +70,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := Run(*file, mode, *unexported); err != nil {
+	if err := Run(*file, mode, *unexported, *warnPkgMask); err != nil {
 		fmt.Println(chalk.Red.Color(err.Error()))
 		os.Exit(1)
 	}
@@ -79,13 +80,13 @@ func main() {
 //
 //	err := msgp.Run("path/to/myfile.go", gen.Size|gen.Marshal|gen.Unmarshal|gen.Test, false)
 //
-func Run(gofile string, mode gen.Method, unexported bool) error {
+func Run(gofile string, mode gen.Method, unexported bool, warnPkgMask string) error {
 	if mode&^gen.Test == 0 {
 		return nil
 	}
 	fmt.Println(chalk.Magenta.Color("======== MessagePack Code Generator ======="))
 	fmt.Printf(chalk.Magenta.Color(">>> Input: \"%s\"\n"), gofile)
-	fs, err := parse.File(gofile, unexported)
+	fs, err := parse.File(gofile, unexported, warnPkgMask)
 	if err != nil {
 		return err
 	}
