@@ -77,6 +77,14 @@ func (m *marshalGen) Execute(p Elem) ([]string, error) {
 
 	m.p.printf("\nfunc (_ %[2]s) CanMarshalMsg(%[1]s interface{}) bool {", c, methodRecv)
 	m.p.printf("\n  _, ok := (%s).(%s)", c, methodRecv)
+
+	// If this is a value receiver, check for a pointer type too
+	if methodRecv == p.TypeName() {
+		m.p.printf("\n  if !ok {")
+		m.p.printf("\n    _, ok = (%s).(*%s)", c, methodRecv)
+		m.p.printf("\n  }")
+	}
+
 	m.p.printf("\n  return ok")
 	m.p.printf("\n}")
 
