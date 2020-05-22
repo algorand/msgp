@@ -6,8 +6,6 @@ import (
 
 // Raw represents raw formatted bytes.
 // We "blindly" store it during encode and retrieve the raw bytes during decode.
-// Note: it is dangerous during encode, so we may gate the behaviour
-// behind an Encode flag which must be explicitly set.
 type Raw []byte
 
 // MsgIsZero returns whether this is a zero value
