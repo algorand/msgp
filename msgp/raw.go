@@ -19,7 +19,7 @@ func (z *Raw) MarshalMsg(b []byte) (o []byte, err error) {
 	return o, nil
 }
 
-// UnmarshalMsg implements msgp.Unmarshaler
+// UnmarshalMsg unmarshal the provided bytes into the object.
 func (z *Raw) UnmarshalMsg(bts []byte) (o []byte, err error) {
 	var isnil bool
 	var sz int
