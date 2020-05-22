@@ -648,7 +648,7 @@ func ReadByteBytes(b []byte) (byte, []byte, error) {
 }
 
 // ReadBytesBytes reads a 'bin' object
-// from 'b' and returns its vaue and
+// from 'b' and returns its value and
 // the remaining bytes in 'b'.
 // Possible errors:
 // - ErrShortBytes (too few bytes)
