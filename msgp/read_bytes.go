@@ -49,6 +49,76 @@ func IsNil(b []byte) bool {
 	return false
 }
 
+// Raw is raw MessagePack.
+// Raw allows you to read and write
+// data without interpreting its contents.
+type Raw []byte
+
+// CanMarshalMsg returns true if the z interface is a Raw object ( part of the Marshaler interface )
+func (Raw) CanMarshalMsg(z interface{}) bool {
+	_, ok := (z).(Raw)
+	if !ok {
+		_, ok = (z).(*Raw)
+	}
+	return ok
+}
+
+// MarshalMsg implements msgp.Marshaler.
+// It appends the raw contents of 'raw'
+// to the provided byte slice. If 'raw'
+// is 0 bytes, 'nil' will be appended instead.
+func (r Raw) MarshalMsg(b []byte) ([]byte, error) {
+	i := len(r)
+	if i == 0 {
+		return AppendNil(b), nil
+	}
+	o, l := ensure(b, i)
+	copy(o[l:], []byte(r))
+	return o, nil
+}
+
+// CanUnmarshalMsg returns true if the z interface is a Raw object ( part of the Unmarshaler interface )
+func (*Raw) CanUnmarshalMsg(z interface{}) bool {
+	_, ok := (z).(*Raw)
+	return ok
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler.
+// It sets the contents of *Raw to be the next
+// object in the provided byte slice.
+func (r *Raw) UnmarshalMsg(b []byte) ([]byte, error) {
+	l := len(b)
+	out, err := Skip(b)
+	if err != nil {
+		return b, err
+	}
+	rlen := l - len(out)
+	if IsNil(b[:rlen]) {
+		rlen = 0
+	}
+	if cap(*r) < rlen {
+		*r = make(Raw, rlen)
+	} else {
+		*r = (*r)[0:rlen]
+	}
+	copy(*r, b[:rlen])
+	return out, nil
+}
+
+// Msgsize implements msgp.Sizer
+func (r Raw) Msgsize() int {
+	l := len(r)
+	if l == 0 {
+		return 1 // for 'nil'
+	}
+	return l
+}
+
+// MsgIsZero returns whether this is a zero value
+func (r *Raw) MsgIsZero() bool {
+	return len(*r) == 0
+}
+
 // ReadMapHeaderBytes reads a map header size
 // from 'b' and returns the remaining bytes.
 // Possible errors:
