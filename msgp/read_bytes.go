@@ -54,6 +54,15 @@ func IsNil(b []byte) bool {
 // data without interpreting its contents.
 type Raw []byte
 
+// CanMarshalMsg returns true if the z interface is a Raw object ( part of the Marshaler interface )
+func (Raw) CanMarshalMsg(z interface{}) bool {
+	_, ok := (z).(Raw)
+	if !ok {
+		_, ok = (z).(*Raw)
+	}
+	return ok
+}
+
 // MarshalMsg implements msgp.Marshaler.
 // It appends the raw contents of 'raw'
 // to the provided byte slice. If 'raw'
@@ -66,6 +75,12 @@ func (r Raw) MarshalMsg(b []byte) ([]byte, error) {
 	o, l := ensure(b, i)
 	copy(o[l:], []byte(r))
 	return o, nil
+}
+
+// CanUnmarshalMsg returns true if the z interface is a Raw object ( part of the Unmarshaler interface )
+func (*Raw) CanUnmarshalMsg(z interface{}) bool {
+	_, ok := (z).(*Raw)
+	return ok
 }
 
 // UnmarshalMsg implements msgp.Unmarshaler.
