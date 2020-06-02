@@ -10,18 +10,20 @@ import (
 	"github.com/algorand/msgp/msgp"
 )
 
-func marshal(w io.Writer) *marshalGen {
+func marshal(w io.Writer, topics *Topics) *marshalGen {
 	return &marshalGen{
-		p: printer{w: w},
+		p:      printer{w: w},
+		topics: topics,
 	}
 }
 
 type marshalGen struct {
 	passes
-	p    printer
-	fuse []byte
-	ctx  *Context
-	msgs []string
+	p      printer
+	fuse   []byte
+	ctx    *Context
+	msgs   []string
+	topics *Topics
 }
 
 func (m *marshalGen) Method() Method { return Marshal }
@@ -61,6 +63,9 @@ func (m *marshalGen) Execute(p Elem) ([]string, error) {
 		m.p.printf("\n  return ok")
 		m.p.printf("\n}")
 
+		m.topics.Add(methodRecv, "MarshalMsg")
+		m.topics.Add(methodRecv, "CanMarshalMsg")
+
 		return m.msgs, m.p.err
 	}
 
@@ -87,6 +92,9 @@ func (m *marshalGen) Execute(p Elem) ([]string, error) {
 
 	m.p.printf("\n  return ok")
 	m.p.printf("\n}")
+
+	m.topics.Add(methodRecv, "MarshalMsg")
+	m.topics.Add(methodRecv, "CanMarshalMsg")
 
 	return m.msgs, m.p.err
 }

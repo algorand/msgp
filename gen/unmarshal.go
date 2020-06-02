@@ -6,9 +6,10 @@ import (
 	"strconv"
 )
 
-func unmarshal(w io.Writer) *unmarshalGen {
+func unmarshal(w io.Writer, topics *Topics) *unmarshalGen {
 	return &unmarshalGen{
-		p: printer{w: w},
+		p:      printer{w: w},
+		topics: topics,
 	}
 }
 
@@ -18,6 +19,7 @@ type unmarshalGen struct {
 	hasfield bool
 	ctx      *Context
 	msgs     []string
+	topics   *Topics
 }
 
 func (u *unmarshalGen) Method() Method { return Unmarshal }
@@ -62,6 +64,9 @@ func (u *unmarshalGen) Execute(p Elem) ([]string, error) {
 		u.p.printf("\n  return ok")
 		u.p.printf("\n}")
 
+		u.topics.Add(methodRecv, "UnmarshalMsg")
+		u.topics.Add(methodRecv, "CanUnmarshalMsg")
+
 		return u.msgs, u.p.err
 	}
 
@@ -78,6 +83,9 @@ func (u *unmarshalGen) Execute(p Elem) ([]string, error) {
 	u.p.printf("\n  _, ok := (%s).(%s)", c, methodRecv)
 	u.p.printf("\n  return ok")
 	u.p.printf("\n}")
+
+	u.topics.Add(methodRecv, "UnmarshalMsg")
+	u.topics.Add(methodRecv, "CanUnmarshalMsg")
 
 	return u.msgs, u.p.err
 }

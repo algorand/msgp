@@ -22,18 +22,20 @@ const (
 	expr
 )
 
-func sizes(w io.Writer) *sizeGen {
+func sizes(w io.Writer, topics *Topics) *sizeGen {
 	return &sizeGen{
-		p:     printer{w: w},
-		state: assign,
+		p:      printer{w: w},
+		state:  assign,
+		topics: topics,
 	}
 }
 
 type sizeGen struct {
 	passes
-	p     printer
-	state sizeState
-	ctx   *Context
+	p      printer
+	state  sizeState
+	ctx    *Context
+	topics *Topics
 }
 
 func (s *sizeGen) Method() Method { return Size }
@@ -88,19 +90,24 @@ func (s *sizeGen) Execute(p Elem) ([]string, error) {
 	if IsDangling(p) {
 		baseType := p.(*BaseElem).IdentName
 		ptrName := p.Varname()
-		s.p.printf("\nfunc (%s %s) Msgsize() int {", p.Varname(), methodReceiver(p))
+		receiver := methodReceiver(p)
+		s.p.printf("\nfunc (%s %s) Msgsize() int {", ptrName, receiver)
 		s.p.printf("\n  return ((*(%s))(%s)).Msgsize()", baseType, ptrName)
 		s.p.printf("\n}")
+		s.topics.Add(receiver, "Msgsize")
 		return nil, s.p.err
 	}
 
 	s.ctx = &Context{}
 	s.ctx.PushString(p.TypeName())
 
-	s.p.printf("\nfunc (%s %s) Msgsize() (s int) {", p.Varname(), imutMethodReceiver(p))
+	ptrName := p.Varname()
+	receiver := imutMethodReceiver(p)
+	s.p.printf("\nfunc (%s %s) Msgsize() (s int) {", ptrName, receiver)
 	s.state = assign
 	next(s, p)
 	s.p.nakedReturn()
+	s.topics.Add(receiver, "Msgsize")
 	return nil, s.p.err
 }
 

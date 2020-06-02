@@ -237,7 +237,7 @@ func goGenerateTpl(cwd, tfile string, tpl *template.Template, tplData interface{
 
 	mode := gen.Size | gen.Marshal | gen.Unmarshal
 
-	return Run(tfile, mode, false)
+	return Run(tfile, mode, false, "")
 }
 
 var issue185IdentsTpl = template.Must(template.New("").Parse(`
