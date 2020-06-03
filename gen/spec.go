@@ -91,22 +91,22 @@ type Printer struct {
 	gens []generator
 }
 
-func NewPrinter(m Method, out io.Writer, tests io.Writer) *Printer {
+func NewPrinter(m Method, topics *Topics, out io.Writer, tests io.Writer) *Printer {
 	if m.isset(Test) && tests == nil {
 		panic("cannot print tests with 'nil' tests argument!")
 	}
 	gens := make([]generator, 0, 7)
 	if m.isset(Marshal) {
-		gens = append(gens, marshal(out))
+		gens = append(gens, marshal(out, topics))
 	}
 	if m.isset(Unmarshal) {
-		gens = append(gens, unmarshal(out))
+		gens = append(gens, unmarshal(out, topics))
 	}
 	if m.isset(Size) {
-		gens = append(gens, sizes(out))
+		gens = append(gens, sizes(out, topics))
 	}
 	if m.isset(IsZero) {
-		gens = append(gens, isZeros(out))
+		gens = append(gens, isZeros(out, topics))
 	}
 	if m.isset(marshaltest) {
 		gens = append(gens, mtest(tests))

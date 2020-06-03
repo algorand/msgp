@@ -19,6 +19,7 @@ type FileSet struct {
 	PkgPath    string              // package path
 	Specs      map[string]ast.Expr // type specs in file
 	Aliases    map[string]ast.Expr // type aliases in file
+	Interfaces map[string]ast.Expr // type interfaces in file
 	Consts     map[string]ast.Expr // consts
 	Identities map[string]gen.Elem // processed from specs
 	Directives []string            // raw preprocessor directives
@@ -79,6 +80,7 @@ func packageToFileSet(p *packages.Package, imps map[string]*FileSet, unexported 
 		PkgPath:    p.PkgPath,
 		Specs:      make(map[string]ast.Expr),
 		Aliases:    make(map[string]ast.Expr),
+		Interfaces: make(map[string]ast.Expr),
 		Consts:     make(map[string]ast.Expr),
 		Identities: make(map[string]gen.Elem),
 		ImportSet:  imps,
@@ -356,6 +358,8 @@ func (fs *FileSet) getTypeSpecs(f *ast.File) {
 						} else {
 							fs.Aliases[s.Name.Name] = s.Type
 						}
+					case *ast.InterfaceType:
+						fs.Interfaces[s.Name.Name] = s.Type
 					}
 
 				case *ast.ValueSpec:
@@ -613,7 +617,8 @@ func (fs *FileSet) parseExpr(e ast.Expr) gen.Elem {
 		if b.Value == gen.IDENT {
 			_, specOK := fs.Specs[e.Name]
 			_, aliasOK := fs.Aliases[e.Name]
-			if !specOK && !aliasOK {
+			_, interfaceOK := fs.Interfaces[e.Name]
+			if !specOK && !aliasOK && !interfaceOK {
 				warnf("non-local identifier: %s\n", e.Name)
 			}
 		}

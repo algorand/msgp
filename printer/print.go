@@ -103,11 +103,20 @@ func generate(f *parse.FileSet, mode gen.Method) (*bytes.Buffer, *bytes.Buffer, 
 	var testwr io.Writer
 	if mode&gen.Test == gen.Test {
 		testbuf = bytes.NewBuffer(make([]byte, 0, 4096))
+		writeBuildHeader(testbuf, []string{"!skip_msgp_testing"})
 		writePkgHeader(testbuf, f.Package)
 		writeImportHeader(testbuf, "github.com/algorand/msgp/msgp", "testing")
 		testwr = testbuf
 	}
-	return outbuf, testbuf, f.PrintTo(gen.NewPrinter(mode, outbuf, testwr))
+	funcbuf := bytes.NewBuffer(make([]byte, 0, 4096))
+	var topics gen.Topics
+
+	err := f.PrintTo(gen.NewPrinter(mode, &topics, funcbuf, testwr))
+	if err == nil {
+		outbuf.Write(topics.Bytes())
+		outbuf.Write(funcbuf.Bytes())
+	}
+	return outbuf, testbuf, err
 }
 
 func writePkgHeader(b *bytes.Buffer, name string) {
@@ -131,4 +140,9 @@ func writeImportHeader(b *bytes.Buffer, imports ...string) {
 		}
 	}
 	b.WriteString(")\n\n")
+}
+
+func writeBuildHeader(b *bytes.Buffer, buildHeaders []string) {
+	headers := fmt.Sprintf("// +build %s\n\n", strings.Join(buildHeaders, " "))
+	b.WriteString(headers)
 }

@@ -4,16 +4,18 @@ import (
 	"io"
 )
 
-func isZeros(w io.Writer) *isZeroGen {
+func isZeros(w io.Writer, topics *Topics) *isZeroGen {
 	return &isZeroGen{
-		p: printer{w: w},
+		p:      printer{w: w},
+		topics: topics,
 	}
 }
 
 type isZeroGen struct {
 	passes
-	p   printer
-	ctx *Context
+	p      printer
+	ctx    *Context
+	topics *Topics
 }
 
 func (s *isZeroGen) Method() Method { return IsZero }
@@ -43,18 +45,24 @@ func (s *isZeroGen) Execute(p Elem) ([]string, error) {
 	if IsDangling(p) {
 		baseType := p.(*BaseElem).IdentName
 		ptrName := p.Varname()
-		s.p.printf("\nfunc (%s %s) MsgIsZero() bool {", p.Varname(), methodReceiver(p))
+		receiver := methodReceiver(p)
+		s.p.printf("\nfunc (%s %s) MsgIsZero() bool {", ptrName, receiver)
 		s.p.printf("\n  return ((*(%s))(%s)).MsgIsZero()", baseType, ptrName)
 		s.p.printf("\n}")
+		s.topics.Add(receiver, "MsgIsZero")
 		return nil, s.p.err
 	}
 
-	s.p.printf("\nfunc (%s %s) MsgIsZero() bool {", p.Varname(), imutMethodReceiver(p))
+	ptrName := p.Varname()
+	receiver := imutMethodReceiver(p)
+	s.p.printf("\nfunc (%s %s) MsgIsZero() bool {", ptrName, receiver)
 	ize := p.IfZeroExpr()
 	if ize == "" {
 		ize = "true"
 	}
 	s.p.printf("\nreturn %s", ize)
 	s.p.printf("\n}")
+
+	s.topics.Add(receiver, "MsgIsZero")
 	return nil, s.p.err
 }
