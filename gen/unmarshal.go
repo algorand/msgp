@@ -210,6 +210,16 @@ func (u *unmarshalGen) gBase(b *BaseElem) {
 
 	switch b.Value {
 	case Bytes:
+		if b.common.AllocBound() != "" {
+			sz := randIdent()
+			u.p.printf("\nvar %s int", sz)
+			u.p.printf("\n%s, err = msgp.ReadBytesBytesHeader(bts)", sz)
+			u.p.wrapErrCheck(u.ctx.ArgsStr())
+			u.p.printf("\nif %s > %s {", sz, b.common.AllocBound())
+			u.p.printf("\nerr = msgp.ErrOverflow(uint64(%s), %s)", sz, b.common.AllocBound())
+			u.p.printf("\nreturn")
+			u.p.printf("\n}")
+		}
 		u.p.printf("\n%s, bts, err = msgp.ReadBytesBytes(bts, %s)", refname, lowered)
 	case Ext:
 		u.p.printf("\nbts, err = msgp.ReadExtensionBytes(bts, %s)", lowered)

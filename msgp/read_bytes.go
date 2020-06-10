@@ -718,7 +718,7 @@ func ReadByteBytes(b []byte) (byte, []byte, error) {
 }
 
 // ReadBytesBytes reads a 'bin' object
-// from 'b' and returns its vaue and
+// from 'b' and returns its value and
 // the remaining bytes in 'b'.
 // Possible errors:
 // - ErrShortBytes (too few bytes)
@@ -748,6 +748,85 @@ func readBytesBytesSlow(b []byte, flattenMap bool) (v []byte, o []byte, err erro
 	}
 
 	return
+}
+
+// ReadBytesBytesHeader reads the header of a 'bin' object
+// from 'b' and return it's length, in bytes.
+// Possible errors:
+// - ErrShortBytes (too few bytes)
+// - TypeError{} (not a 'bin' object)
+func ReadBytesBytesHeader(b []byte) (sz int, err error) {
+	l := len(b)
+	if l < 1 {
+		return 0, ErrShortBytes
+	}
+
+	lead := b[0]
+
+	// go-codec compat: decode string encodings into byte arrays
+
+	if isfixstr(lead) {
+		sz = int(rfixstr(lead))
+		return
+	}
+
+	switch lead {
+	case mstr8:
+		if l < 2 {
+			err = ErrShortBytes
+			return
+		}
+		sz = int(b[1])
+		return
+
+	case mstr16:
+		if l < 3 {
+			err = ErrShortBytes
+			return
+		}
+		sz = int(big.Uint16(b[1:]))
+		return
+
+	case mstr32:
+		if l < 5 {
+			err = ErrShortBytes
+			return
+		}
+		sz, err = u32int(big.Uint32(b[1:]))
+		return
+
+	case mnil:
+		sz = 0
+		return
+
+	case mbin8:
+		if l < 2 {
+			err = ErrShortBytes
+			return
+		}
+		sz = int(b[1])
+		return
+
+	case mbin16:
+		if l < 3 {
+			err = ErrShortBytes
+			return
+		}
+		sz = int(big.Uint16(b[1:]))
+		return
+
+	case mbin32:
+		if l < 5 {
+			err = ErrShortBytes
+			return
+		}
+		sz, err = u32int(big.Uint32(b[1:]))
+		return
+
+	default:
+		sz, _, _, err = readArrayHeaderBytes(b, true)
+		return
+	}
 }
 
 func readBytesBytes(b []byte, scratch []byte, zc bool, flattenMap bool) (v []byte, o []byte, err error) {
