@@ -4,6 +4,7 @@ import (
 	"go/ast"
 	"io"
 	"strconv"
+	"strings"
 )
 
 func unmarshal(w io.Writer, topics *Topics) *unmarshalGen {
@@ -278,7 +279,12 @@ func (u *unmarshalGen) gSlice(s *Slice) {
 	u.assignAndCheck(sz, isnil, arrayHeader)
 	resizemsgs := u.p.resizeSlice(sz, isnil, s, u.ctx.ArgsStr())
 	u.msgs = append(u.msgs, resizemsgs...)
-	u.p.rangeBlock(u.ctx, s.Index, s.Varname(), u, s.Els)
+	childElement := s.Els
+	if s.Els.AllocBound() == "" && len(strings.Split(s.AllocBound(), ",")) > 1 {
+		childElement = s.Els.Copy()
+		childElement.SetAllocBound(s.AllocBound()[strings.Index(s.AllocBound(), ",")+1:])
+	}
+	u.p.rangeBlock(u.ctx, s.Index, s.Varname(), u, childElement)
 }
 
 func (u *unmarshalGen) gMap(m *Map) {
