@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"strings"
 )
 
 const (
@@ -334,6 +335,7 @@ func (p *printer) resizeMap(size string, isnil string, m *Map, ctx string) []str
 	if allocbound == "" {
 		return []string{fmt.Sprintf("Missing allocbound on map %v", m)}
 	}
+	allocbound = strings.Split(allocbound, ",")[0]
 	if allocbound != "-" {
 		p.printf("\nif %s > %s {", size, allocbound)
 		p.printf("\nerr = msgp.ErrOverflow(uint64(%s), uint64(%s))", size, allocbound)
@@ -380,6 +382,7 @@ func (p *printer) resizeSlice(size string, isnil string, s *Slice, ctx string) [
 	if allocbound == "" {
 		return []string{fmt.Sprintf("Missing allocbound on slice %v", s)}
 	}
+	allocbound = strings.Split(allocbound, ",")[0]
 	if allocbound != "-" {
 		p.printf("\nif %s > %s {", size, allocbound)
 		p.printf("\nerr = msgp.ErrOverflow(uint64(%s), uint64(%s))", size, allocbound)

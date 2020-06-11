@@ -4,6 +4,7 @@ import (
 	"go/ast"
 	"io"
 	"strconv"
+	"strings"
 )
 
 func unmarshal(w io.Writer, topics *Topics) *unmarshalGen {
@@ -210,6 +211,16 @@ func (u *unmarshalGen) gBase(b *BaseElem) {
 
 	switch b.Value {
 	case Bytes:
+		if b.common.AllocBound() != "" {
+			sz := randIdent()
+			u.p.printf("\nvar %s int", sz)
+			u.p.printf("\n%s, err = msgp.ReadBytesBytesHeader(bts)", sz)
+			u.p.wrapErrCheck(u.ctx.ArgsStr())
+			u.p.printf("\nif %s > %s {", sz, b.common.AllocBound())
+			u.p.printf("\nerr = msgp.ErrOverflow(uint64(%s), %s)", sz, b.common.AllocBound())
+			u.p.printf("\nreturn")
+			u.p.printf("\n}")
+		}
 		u.p.printf("\n%s, bts, err = msgp.ReadBytesBytes(bts, %s)", refname, lowered)
 	case Ext:
 		u.p.printf("\nbts, err = msgp.ReadExtensionBytes(bts, %s)", lowered)
@@ -268,7 +279,12 @@ func (u *unmarshalGen) gSlice(s *Slice) {
 	u.assignAndCheck(sz, isnil, arrayHeader)
 	resizemsgs := u.p.resizeSlice(sz, isnil, s, u.ctx.ArgsStr())
 	u.msgs = append(u.msgs, resizemsgs...)
-	u.p.rangeBlock(u.ctx, s.Index, s.Varname(), u, s.Els)
+	childElement := s.Els
+	if s.Els.AllocBound() == "" && len(strings.Split(s.AllocBound(), ",")) > 1 {
+		childElement = s.Els.Copy()
+		childElement.SetAllocBound(s.AllocBound()[strings.Index(s.AllocBound(), ",")+1:])
+	}
+	u.p.rangeBlock(u.ctx, s.Index, s.Varname(), u, childElement)
 }
 
 func (u *unmarshalGen) gMap(m *Map) {

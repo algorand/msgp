@@ -406,6 +406,7 @@ func (fs *FileSet) getField(f *ast.Field) []gen.StructField {
 	sf := make([]gen.StructField, 1)
 	var extension, flatten bool
 	var allocbound string
+	var allocbounds []string
 
 	// always flatten embedded structs
 	flatten = true
@@ -420,7 +421,7 @@ func (fs *FileSet) getField(f *ast.Field) []gen.StructField {
 				extension = true
 			}
 			if strings.HasPrefix(tag, "allocbound=") {
-				allocbound = strings.Split(tag, "=")[1]
+				allocbounds = append(allocbounds, strings.Split(tag, "=")[1])
 			}
 		}
 		// ignore "-" fields
@@ -431,7 +432,7 @@ func (fs *FileSet) getField(f *ast.Field) []gen.StructField {
 		sf[0].FieldTagParts = tags
 		sf[0].RawTag = f.Tag.Value
 	}
-
+	allocbound = strings.Join(allocbounds, ",")
 	ex := fs.parseExpr(f.Type)
 	if ex == nil {
 		return nil
