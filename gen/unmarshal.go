@@ -217,7 +217,7 @@ func (u *unmarshalGen) gBase(b *BaseElem) {
 			u.p.printf("\n%s, err = msgp.ReadBytesBytesHeader(bts)", sz)
 			u.p.wrapErrCheck(u.ctx.ArgsStr())
 			u.p.printf("\nif %s > %s {", sz, b.common.AllocBound())
-			u.p.printf("\nerr = msgp.ErrOverflow(uint64(%s), %s)", sz, b.common.AllocBound())
+			u.p.printf("\nerr = msgp.ErrOverflow(uint64(%s), uint64(%s))", sz, b.common.AllocBound())
 			u.p.printf("\nreturn")
 			u.p.printf("\n}")
 		}
