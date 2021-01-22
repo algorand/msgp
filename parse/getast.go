@@ -217,7 +217,7 @@ parse:
 	for name, def := range f.Specs {
 		pushstate(name)
 
-		el := f.parseExpr(def)
+		el := f.parseExpr("", def)
 
 		if el == nil {
 			warnln("failed to parse")
@@ -383,14 +383,14 @@ func fieldName(f *ast.Field) string {
 	}
 }
 
-func (fs *FileSet) parseFieldList(fl *ast.FieldList) []gen.StructField {
+func (fs *FileSet) parseFieldList(importPrefix string, fl *ast.FieldList) []gen.StructField {
 	if fl == nil || fl.NumFields() == 0 {
 		return nil
 	}
 	out := make([]gen.StructField, 0, fl.NumFields())
 	for _, field := range fl.List {
 		pushstate(fieldName(field))
-		fds := fs.getField(field)
+		fds := fs.getField(importPrefix, field)
 		if len(fds) > 0 {
 			out = append(out, fds...)
 		} else {
@@ -402,7 +402,7 @@ func (fs *FileSet) parseFieldList(fl *ast.FieldList) []gen.StructField {
 }
 
 // translate *ast.Field into []gen.StructField
-func (fs *FileSet) getField(f *ast.Field) []gen.StructField {
+func (fs *FileSet) getField(importPrefix string, f *ast.Field) []gen.StructField {
 	sf := make([]gen.StructField, 1)
 	var extension, flatten bool
 	var allocbound string
@@ -433,7 +433,7 @@ func (fs *FileSet) getField(f *ast.Field) []gen.StructField {
 		sf[0].RawTag = f.Tag.Value
 	}
 	allocbound = strings.Join(allocbounds, ",")
-	ex := fs.parseExpr(f.Type)
+	ex := fs.parseExpr(importPrefix, f.Type)
 	if ex == nil {
 		return nil
 	}
@@ -442,7 +442,7 @@ func (fs *FileSet) getField(f *ast.Field) []gen.StructField {
 	switch len(f.Names) {
 	case 0:
 		if flatten {
-			maybe := fs.getFieldsFromEmbeddedStruct(f.Type)
+			maybe := fs.getFieldsFromEmbeddedStruct(importPrefix, f.Type)
 			if maybe != nil {
 				// Prefix all field names with the explicit
 				// embedded struct selector, to avoid ambiguity.
@@ -501,7 +501,7 @@ func (fs *FileSet) getField(f *ast.Field) []gen.StructField {
 	return sf
 }
 
-func (fs *FileSet) getFieldsFromEmbeddedStruct(f ast.Expr) []gen.StructField {
+func (fs *FileSet) getFieldsFromEmbeddedStruct(importPrefix string, f ast.Expr) []gen.StructField {
 	switch f := f.(type) {
 	case *ast.Ident:
 		s, ok := fs.Specs[f.Name]
@@ -511,7 +511,7 @@ func (fs *FileSet) getFieldsFromEmbeddedStruct(f ast.Expr) []gen.StructField {
 
 		switch s := s.(type) {
 		case *ast.StructType:
-			return fs.parseFieldList(s.Fields)
+			return fs.parseFieldList(importPrefix, s.Fields)
 		default:
 			return nil
 		}
@@ -532,7 +532,7 @@ func (fs *FileSet) getFieldsFromEmbeddedStruct(f ast.Expr) []gen.StructField {
 			return nil
 		}
 
-		return pkgfs.getFieldsFromEmbeddedStruct(f.Sel)
+		return pkgfs.getFieldsFromEmbeddedStruct(pkgid.Name + ".", f.Sel)
 	default:
 		// other possibilities are disallowed
 		return nil
@@ -593,16 +593,16 @@ func stringify(e ast.Expr) string {
 // - *ast.StructType (struct {})
 // - *ast.SelectorExpr (a.B)
 // - *ast.InterfaceType (interface {})
-func (fs *FileSet) parseExpr(e ast.Expr) gen.Elem {
+func (fs *FileSet) parseExpr(importPrefix string, e ast.Expr) gen.Elem {
 	switch e := e.(type) {
 
 	case *ast.MapType:
-		kt := fs.parseExpr(e.Key)
+		kt := fs.parseExpr(importPrefix, e.Key)
 		if kt == nil {
 			return nil
 		}
 
-		vt := fs.parseExpr(e.Value)
+		vt := fs.parseExpr(importPrefix, e.Value)
 		if vt == nil {
 			return nil
 		}
@@ -610,7 +610,7 @@ func (fs *FileSet) parseExpr(e ast.Expr) gen.Elem {
 		return &gen.Map{Key: kt, Value: vt}
 
 	case *ast.Ident:
-		b := gen.Ident(e.Name)
+		b := gen.Ident(importPrefix, e.Name)
 
 		// work to resove this expression
 		// can be done later, once we've resolved
@@ -636,7 +636,7 @@ func (fs *FileSet) parseExpr(e ast.Expr) gen.Elem {
 
 		// return early if we don't know
 		// what the slice element type is
-		els := fs.parseExpr(e.Elt)
+		els := fs.parseExpr(importPrefix, e.Elt)
 		if els == nil {
 			return nil
 		}
@@ -697,16 +697,16 @@ func (fs *FileSet) parseExpr(e ast.Expr) gen.Elem {
 		return &gen.Slice{Els: els}
 
 	case *ast.StarExpr:
-		if v := fs.parseExpr(e.X); v != nil {
+		if v := fs.parseExpr(importPrefix, e.X); v != nil {
 			return &gen.Ptr{Value: v}
 		}
 		return nil
 
 	case *ast.StructType:
-		return &gen.Struct{Fields: fs.parseFieldList(e.Fields)}
+		return &gen.Struct{Fields: fs.parseFieldList(importPrefix, e.Fields)}
 
 	case *ast.SelectorExpr:
-		return gen.Ident(stringify(e))
+		return gen.Ident("", stringify(e))
 
 	case *ast.InterfaceType:
 		// support `interface{}`

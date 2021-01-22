@@ -226,11 +226,12 @@ type Elem interface {
 
 // Ident returns the *BaseElem that corresponds
 // to the provided identity.
-func Ident(id string) *BaseElem {
+func Ident(importPrefix string, id string) *BaseElem {
 	p, ok := primitives[id]
 	if ok {
 		return &BaseElem{Value: p}
 	}
+	id = importPrefix + id
 	be := &BaseElem{Value: IDENT, IdentName: id}
 	be.Alias(id)
 	return be
