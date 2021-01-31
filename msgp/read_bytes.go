@@ -67,14 +67,14 @@ func (Raw) CanMarshalMsg(z interface{}) bool {
 // It appends the raw contents of 'raw'
 // to the provided byte slice. If 'raw'
 // is 0 bytes, 'nil' will be appended instead.
-func (r Raw) MarshalMsg(b []byte) ([]byte, error) {
+func (r Raw) MarshalMsg(b []byte) []byte {
 	i := len(r)
 	if i == 0 {
-		return AppendNil(b), nil
+		return AppendNil(b)
 	}
 	o, l := ensure(b, i)
 	copy(o[l:], []byte(r))
-	return o, nil
+	return o
 }
 
 // CanUnmarshalMsg returns true if the z interface is a Raw object ( part of the Unmarshaler interface )
