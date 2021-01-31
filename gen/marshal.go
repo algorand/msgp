@@ -63,8 +63,15 @@ func (m *marshalGen) Execute(p Elem) ([]string, error) {
 		m.p.printf("\n  return ok")
 		m.p.printf("\n}")
 
+		m.p.printf("\nfunc (%s %s) MarshalMsgNoErr(b []byte) []byte {", c, methodRecv)
+		m.p.printf("\n  res, err := (%s).MarshalMsg(b)", c)
+		m.p.printf("\n  if err != nil { panic(err) }")
+		m.p.printf("\n  return res")
+		m.p.printf("\n}")
+
 		m.topics.Add(methodRecv, "MarshalMsg")
 		m.topics.Add(methodRecv, "CanMarshalMsg")
+		m.topics.Add(methodRecv, "MarshalMsgNoErr")
 
 		return m.msgs, m.p.err
 	}
@@ -93,8 +100,15 @@ func (m *marshalGen) Execute(p Elem) ([]string, error) {
 	m.p.printf("\n  return ok")
 	m.p.printf("\n}")
 
+	m.p.printf("\nfunc (%s %s) MarshalMsgNoErr(b []byte) []byte {", c, methodRecv)
+	m.p.printf("\n  res, err := (%s).MarshalMsg(b)", c)
+	m.p.printf("\n  if err != nil { panic(err) }")
+	m.p.printf("\n  return res")
+	m.p.printf("\n}")
+
 	m.topics.Add(methodRecv, "MarshalMsg")
 	m.topics.Add(methodRecv, "CanMarshalMsg")
+	m.topics.Add(methodRecv, "MarshalMsgNoErr")
 
 	return m.msgs, m.p.err
 }
