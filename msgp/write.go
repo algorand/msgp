@@ -44,13 +44,12 @@ func Require(old []byte, extra int) []byte {
 // by types that know how to marshal themselves
 // as MessagePack. MarshalMsg appends the marshalled
 // form of the object to the provided
-// byte slice, returning the extended
-// slice and any errors encountered.
+// byte slice, returning the extended slice.
 // CanMarshalMsg checks that o is of the same type as
 // was used to generate the MarshalMsg code; it can be
 // used to guard against MarshalMsg() going to an embedded
 // field in a struct rather than marshaling the entire struct.
 type Marshaler interface {
-	MarshalMsg([]byte) ([]byte, error)
+	MarshalMsg([]byte) []byte
 	CanMarshalMsg(o interface{}) bool
 }

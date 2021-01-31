@@ -54,7 +54,7 @@ func (m *marshalGen) Execute(p Elem) ([]string, error) {
 		baseType := p.(*BaseElem).IdentName
 		c := p.Varname()
 		methodRecv := methodReceiver(p)
-		m.p.printf("\nfunc (%s %s) MarshalMsg(b []byte) ([]byte, error) {", c, methodRecv)
+		m.p.printf("\nfunc (%s %s) MarshalMsg(b []byte) []byte {", c, methodRecv)
 		m.p.printf("\n  return ((*(%s))(%s)).MarshalMsg(b)", baseType, c)
 		m.p.printf("\n}")
 
@@ -75,7 +75,7 @@ func (m *marshalGen) Execute(p Elem) ([]string, error) {
 	c := p.Varname()
 	methodRecv := imutMethodReceiver(p)
 
-	m.p.printf("\nfunc (%s %s) MarshalMsg(b []byte) (o []byte, err error) {", c, methodRecv)
+	m.p.printf("\nfunc (%s %s) MarshalMsg(b []byte) (o []byte) {", c, methodRecv)
 	m.p.printf("\no = msgp.Require(b, %s.Msgsize())", c)
 	next(m, p)
 	m.p.nakedReturn()
@@ -378,24 +378,16 @@ func (m *marshalGen) gBase(b *BaseElem) {
 		} else {
 			vname = randIdent()
 			m.p.printf("\nvar %s %s", vname, b.BaseType())
-			m.p.printf("\n%s, err = %s", vname, tobaseConvert(b))
-			m.p.wrapErrCheck(m.ctx.ArgsStr())
+			m.p.printf("\n%s = %s", vname, tobaseConvert(b))
 		}
 	}
 
-	var echeck bool
 	switch b.Value {
 	case IDENT:
-		echeck = true
-		m.p.printf("\no, err = %s.MarshalMsg(o)", vname)
+		m.p.printf("\no = %s.MarshalMsg(o)", vname)
 	case Intf, Ext:
-		echeck = true
-		m.p.printf("\no, err = msgp.Append%s(o, %s)", b.BaseName(), vname)
+		m.p.printf("\no = msgp.Append%s(o, %s)", b.BaseName(), vname)
 	default:
 		m.rawAppend(b.BaseName(), literalFmt, vname)
-	}
-
-	if echeck {
-		m.p.wrapErrCheck(m.ctx.ArgsStr())
 	}
 }
