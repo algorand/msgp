@@ -40,6 +40,7 @@ func (m *mtestGen) Method() Method { return marshaltest }
 
 func init() {
 	template.Must(marshalTestTempl.Parse(`func TestMarshalUnmarshal{{.TypeName}}(t *testing.T) {
+	partitiontest.PartitionTest(t)
 	v := {{.TypeName}}{}
 	bts := v.MarshalMsg(nil)
 	left, err := v.UnmarshalMsg(bts)
