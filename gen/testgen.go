@@ -61,7 +61,6 @@ func init() {
 }
 
 func TestRandomizedEncoding{{.TypeName}}(t *testing.T) {
-	partitiontest.PartitionTest(t)
 	protocol.RunEncodingTest(t, &{{.TypeName}}{})
 }
 
