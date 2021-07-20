@@ -105,7 +105,9 @@ func generate(f *parse.FileSet, mode gen.Method) (*bytes.Buffer, *bytes.Buffer, 
 		testbuf = bytes.NewBuffer(make([]byte, 0, 4096))
 		writeBuildHeader(testbuf, []string{"!skip_msgp_testing"})
 		writePkgHeader(testbuf, f.Package)
-		writeImportHeader(testbuf, "github.com/algorand/msgp/msgp", "testing")
+		writeImportHeader(
+			testbuf,
+			"github.com/algorand/msgp/msgp", "github.com/algorand/go-algorand/test/partitiontest", "testing")
 		testwr = testbuf
 	}
 	funcbuf := bytes.NewBuffer(make([]byte, 0, 4096))
