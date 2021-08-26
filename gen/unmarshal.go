@@ -78,6 +78,11 @@ func (u *unmarshalGen) Execute(p Elem) ([]string, error) {
 	u.p.printf("\nfunc (%s %s) UnmarshalMsg(bts []byte) (o []byte, err error) {", c, methodRecv)
 	next(u, p)
 	u.p.print("\no = bts")
+
+	// right before the return: attempt to inspect well formed:
+	if e, ok := p.(*Struct); ok && e.AnyHasTagPart("wellformchck") {
+		u.p.printf("\nerr = %s.wellFormed()", c)
+	}
 	u.p.nakedReturn()
 
 	u.p.printf("\nfunc (_ %[2]s) CanUnmarshalMsg(%[1]s interface{}) bool {", c, methodRecv)
