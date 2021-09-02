@@ -80,9 +80,13 @@ func (u *unmarshalGen) Execute(p Elem) ([]string, error) {
 	u.p.print("\no = bts")
 
 	// right before the return: attempt to inspect well formed:
-	for _, s := range p.GetCallbacks() {
-		u.p.printf("\n if err := %s.%s(); err != nil {", c, s)
-		u.p.printf("\n  return nil, err ")
+	for _, callback := range p.GetCallbacks() {
+		if !callback.IsUnmarshallCallback() {
+			continue
+		}
+
+		u.p.printf("\nif err = %s.%s(); err != nil {", c, callback.GetName())
+		u.p.printf("\n  return")
 		u.p.printf("\n}")
 	}
 	u.p.nakedReturn()

@@ -22,11 +22,12 @@ type passDirective func(gen.Method, []string, *gen.Printer) error
 // to add a directive, define a func([]string, *FileSet) error
 // and then add it to this list.
 var directives = map[string]directive{
-	"shim":              applyShim,
-	"ignore":            ignore,
-	"tuple":             astuple,
-	"sort":              sortintf,
-	"allocbound":        allocbound,
+	"shim":       applyShim,
+	"ignore":     ignore,
+	"tuple":      astuple,
+	"sort":       sortintf,
+	"allocbound": allocbound,
+	// _postunmarshalcheck is used to add callbacks to the end of unmarshling that are tied to a specific Element.
 	_postunmarshalcheck: postunmarshalcheck,
 }
 
@@ -52,7 +53,10 @@ func postunmarshalcheck(text []string, f *FileSet) error {
 		return errors.New(fmt.Sprintf("postunmarshalcheck error: type %v does not exist", elemType))
 	}
 	for _, fName := range text[1:] {
-		elem.AddCallback(fName)
+		elem.AddCallback(gen.Callback{
+			Fname:        fName,
+			CallbackType: gen.UnmarshalCallBack,
+		})
 	}
 	return nil
 }

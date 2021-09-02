@@ -532,7 +532,7 @@ func (fs *FileSet) getFieldsFromEmbeddedStruct(importPrefix string, f ast.Expr) 
 			return nil
 		}
 
-		return pkgfs.getFieldsFromEmbeddedStruct(pkgid.Name + ".", f.Sel)
+		return pkgfs.getFieldsFromEmbeddedStruct(pkgid.Name+".", f.Sel)
 	default:
 		// other possibilities are disallowed
 		return nil

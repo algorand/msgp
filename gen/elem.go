@@ -136,22 +136,37 @@ var builtins = map[string]struct{}{
 	"msgp.Number": struct{}{},
 }
 
+// Callback represents a function that can is expected to be printed into the generated code.
+// for example, at the end of a successful unmarshalling.
+type Callback struct {
+	Fname        string
+	CallbackType CallbackType
+}
+
+type CallbackType uint64
+
+// UnmarshalCallBack represents a type callback that should run over the generated code.
+const UnmarshalCallBack CallbackType = 1
+
+func (c Callback) IsUnmarshallCallback() bool { return c.CallbackType == UnmarshalCallBack }
+func (c Callback) GetName() string            { return c.Fname }
+
 // common data/methods for every Elem
 type common struct {
 	vname, alias string
 	allocbound   string
-	callbacks    []string
+	callbacks    []Callback
 }
 
-func (c *common) SetVarname(s string)    { c.vname = s }
-func (c *common) Varname() string        { return c.vname }
-func (c *common) Alias(typ string)       { c.alias = typ }
-func (c *common) SortInterface() string  { return "" }
-func (c *common) SetAllocBound(s string) { c.allocbound = s }
-func (c *common) AllocBound() string     { return c.allocbound }
-func (c *common) GetCallbacks() []string { return c.callbacks }
-func (c *common) AddCallback(s string)   { c.callbacks = append(c.callbacks, s) }
-func (c *common) hidden()                {}
+func (c *common) SetVarname(s string)      { c.vname = s }
+func (c *common) Varname() string          { return c.vname }
+func (c *common) Alias(typ string)         { c.alias = typ }
+func (c *common) SortInterface() string    { return "" }
+func (c *common) SetAllocBound(s string)   { c.allocbound = s }
+func (c *common) AllocBound() string       { return c.allocbound }
+func (c *common) GetCallbacks() []Callback { return c.callbacks }
+func (c *common) AddCallback(cb Callback)  { c.callbacks = append(c.callbacks, cb) }
+func (c *common) hidden()                  {}
 
 func IsDangling(e Elem) bool {
 	if be, ok := e.(*BaseElem); ok && be.Dangling() {
@@ -224,11 +239,11 @@ type Elem interface {
 	// when decoding this type.  Meaningful for slices and maps.
 	AllocBound() string
 
-	// AddCallback adds to the elem a callback it should call at the end of marshaling
-	AddCallback(string)
+	// AddCallback adds to the elem a Callback it should call at the end of marshaling
+	AddCallback(Callback)
 
 	// GetCallbacks fetches all callbacks this Elem stored.
-	GetCallbacks() []string
+	GetCallbacks() []Callback
 
 	hidden()
 }
@@ -683,10 +698,6 @@ type BaseElem struct {
 	Convert      bool      // should we do an explicit conversion?
 	mustinline   bool      // must inline; not printable
 	needsref     bool      // needs reference for shim
-}
-
-func (b *BaseElem) AddCallback(s string) {
-	b.common.AddCallback(s)
 }
 
 func (s *BaseElem) Dangling() bool { return s.mustinline }
