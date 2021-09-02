@@ -80,8 +80,10 @@ func (u *unmarshalGen) Execute(p Elem) ([]string, error) {
 	u.p.print("\no = bts")
 
 	// right before the return: attempt to inspect well formed:
-	if e, ok := p.(*Struct); ok && e.AnyHasTagPart("wellformchck") {
-		u.p.printf("\nerr = %s.wellFormed()", c)
+	for _, s := range p.GetCallbacks() {
+		u.p.printf("\n if err := %s.%s(); err != nil {", c, s)
+		u.p.printf("\n  return nil, err ")
+		u.p.printf("\n}")
 	}
 	u.p.nakedReturn()
 

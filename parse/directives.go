@@ -1,6 +1,7 @@
 package parse
 
 import (
+	"errors"
 	"fmt"
 	"go/ast"
 	"strings"
@@ -21,11 +22,39 @@ type passDirective func(gen.Method, []string, *gen.Printer) error
 // to add a directive, define a func([]string, *FileSet) error
 // and then add it to this list.
 var directives = map[string]directive{
-	"shim":       applyShim,
-	"ignore":     ignore,
-	"tuple":      astuple,
-	"sort":       sortintf,
-	"allocbound": allocbound,
+	"shim":              applyShim,
+	"ignore":            ignore,
+	"tuple":             astuple,
+	"sort":              sortintf,
+	"allocbound":        allocbound,
+	_postunmarshalcheck: postunmarshalcheck,
+}
+
+const _postunmarshalcheck = "postunmarshalcheck"
+
+var errNotEnoughArguments = errors.New("postunmarshalcheck did not receive enough arguments. expected at least 3")
+
+//msgp:sort {Type} {funcName} {funcName} ...
+// the functions should have no params, and output zero.
+func postunmarshalcheck(text []string, f *FileSet) error {
+	if len(text) < 3 {
+		return errNotEnoughArguments
+	}
+	// not error but doesn't do anything
+	if text[0] != _postunmarshalcheck {
+		return nil
+	}
+	text = text[1:]
+
+	elemType := text[0]
+	elem, ok := f.Identities[elemType]
+	if !ok {
+		return errors.New(fmt.Sprintf("postunmarshalcheck error: type %v does not exist", elemType))
+	}
+	for _, fName := range text[1:] {
+		elem.AddCallback(fName)
+	}
+	return nil
 }
 
 var passDirectives = map[string]passDirective{

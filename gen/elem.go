@@ -125,7 +125,7 @@ var primitives = map[string]Primitive{
 	"interface{}":    Intf,
 	"time.Time":      Time,
 	"msgp.Extension": Ext,
-	"error":	  Error,
+	"error":          Error,
 }
 
 // types built into the library
@@ -140,6 +140,7 @@ var builtins = map[string]struct{}{
 type common struct {
 	vname, alias string
 	allocbound   string
+	callbacks    []string
 }
 
 func (c *common) SetVarname(s string)    { c.vname = s }
@@ -148,6 +149,8 @@ func (c *common) Alias(typ string)       { c.alias = typ }
 func (c *common) SortInterface() string  { return "" }
 func (c *common) SetAllocBound(s string) { c.allocbound = s }
 func (c *common) AllocBound() string     { return c.allocbound }
+func (c *common) GetCallbacks() []string { return c.callbacks }
+func (c *common) AddCallback(s string)   { c.callbacks = append(c.callbacks, s) }
 func (c *common) hidden()                {}
 
 func IsDangling(e Elem) bool {
@@ -220,6 +223,12 @@ type Elem interface {
 	// AllocBound returns the maximum number of elements to allocate
 	// when decoding this type.  Meaningful for slices and maps.
 	AllocBound() string
+
+	// AddCallback adds to the elem a callback it should call at the end of marshaling
+	AddCallback(string)
+
+	// GetCallbacks fetches all callbacks this Elem stored.
+	GetCallbacks() []string
 
 	hidden()
 }
@@ -674,6 +683,10 @@ type BaseElem struct {
 	Convert      bool      // should we do an explicit conversion?
 	mustinline   bool      // must inline; not printable
 	needsref     bool      // needs reference for shim
+}
+
+func (b *BaseElem) AddCallback(s string) {
+	b.common.AddCallback(s)
 }
 
 func (s *BaseElem) Dangling() bool { return s.mustinline }
