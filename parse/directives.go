@@ -35,7 +35,7 @@ const _postunmarshalcheck = "postunmarshalcheck"
 
 var errNotEnoughArguments = errors.New("postunmarshalcheck did not receive enough arguments. expected at least 3")
 
-//msgp:sort {Type} {funcName} {funcName} ...
+//msgp:postunmarshalcheck {Type} {funcName} {funcName} ...
 // the functions should have no params, and output zero.
 func postunmarshalcheck(text []string, f *FileSet) error {
 	if len(text) < 3 {
