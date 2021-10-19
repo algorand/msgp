@@ -1,6 +1,7 @@
 package parse
 
 import (
+	"errors"
 	"fmt"
 	"go/ast"
 	"strings"
@@ -26,6 +27,38 @@ var directives = map[string]directive{
 	"tuple":      astuple,
 	"sort":       sortintf,
 	"allocbound": allocbound,
+	// _postunmarshalcheck is used to add callbacks to the end of unmarshling that are tied to a specific Element.
+	_postunmarshalcheck: postunmarshalcheck,
+}
+
+const _postunmarshalcheck = "postunmarshalcheck"
+
+var errNotEnoughArguments = errors.New("postunmarshalcheck did not receive enough arguments. expected at least 3")
+
+//msgp:postunmarshalcheck {Type} {funcName} {funcName} ...
+// the functions should have no params, and output zero.
+func postunmarshalcheck(text []string, f *FileSet) error {
+	if len(text) < 3 {
+		return errNotEnoughArguments
+	}
+	// not error but doesn't do anything
+	if text[0] != _postunmarshalcheck {
+		return nil
+	}
+	text = text[1:]
+
+	elemType := text[0]
+	elem, ok := f.Identities[elemType]
+	if !ok {
+		return errors.New(fmt.Sprintf("postunmarshalcheck error: type %v does not exist", elemType))
+	}
+	for _, fName := range text[1:] {
+		elem.AddCallback(gen.Callback{
+			Fname:        fName,
+			CallbackType: gen.UnmarshalCallBack,
+		})
+	}
+	return nil
 }
 
 var passDirectives = map[string]passDirective{

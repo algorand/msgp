@@ -78,6 +78,17 @@ func (u *unmarshalGen) Execute(p Elem) ([]string, error) {
 	u.p.printf("\nfunc (%s %s) UnmarshalMsg(bts []byte) (o []byte, err error) {", c, methodRecv)
 	next(u, p)
 	u.p.print("\no = bts")
+
+	// right before the return: attempt to inspect well formed:
+	for _, callback := range p.GetCallbacks() {
+		if !callback.IsUnmarshallCallback() {
+			continue
+		}
+
+		u.p.printf("\nif err = %s.%s(); err != nil {", c, callback.GetName())
+		u.p.printf("\n  return")
+		u.p.printf("\n}")
+	}
 	u.p.nakedReturn()
 
 	u.p.printf("\nfunc (_ %[2]s) CanUnmarshalMsg(%[1]s interface{}) bool {", c, methodRecv)

@@ -125,7 +125,7 @@ var primitives = map[string]Primitive{
 	"interface{}":    Intf,
 	"time.Time":      Time,
 	"msgp.Extension": Ext,
-	"error":	  Error,
+	"error":          Error,
 }
 
 // types built into the library
@@ -136,19 +136,37 @@ var builtins = map[string]struct{}{
 	"msgp.Number": struct{}{},
 }
 
+// Callback represents a function that can is expected to be printed into the generated code.
+// for example, at the end of a successful unmarshalling.
+type Callback struct {
+	Fname        string
+	CallbackType CallbackType
+}
+
+type CallbackType uint64
+
+// UnmarshalCallBack represents a type callback that should run over the generated code.
+const UnmarshalCallBack CallbackType = 1
+
+func (c Callback) IsUnmarshallCallback() bool { return c.CallbackType == UnmarshalCallBack }
+func (c Callback) GetName() string            { return c.Fname }
+
 // common data/methods for every Elem
 type common struct {
 	vname, alias string
 	allocbound   string
+	callbacks    []Callback
 }
 
-func (c *common) SetVarname(s string)    { c.vname = s }
-func (c *common) Varname() string        { return c.vname }
-func (c *common) Alias(typ string)       { c.alias = typ }
-func (c *common) SortInterface() string  { return "" }
-func (c *common) SetAllocBound(s string) { c.allocbound = s }
-func (c *common) AllocBound() string     { return c.allocbound }
-func (c *common) hidden()                {}
+func (c *common) SetVarname(s string)      { c.vname = s }
+func (c *common) Varname() string          { return c.vname }
+func (c *common) Alias(typ string)         { c.alias = typ }
+func (c *common) SortInterface() string    { return "" }
+func (c *common) SetAllocBound(s string)   { c.allocbound = s }
+func (c *common) AllocBound() string       { return c.allocbound }
+func (c *common) GetCallbacks() []Callback { return c.callbacks }
+func (c *common) AddCallback(cb Callback)  { c.callbacks = append(c.callbacks, cb) }
+func (c *common) hidden()                  {}
 
 func IsDangling(e Elem) bool {
 	if be, ok := e.(*BaseElem); ok && be.Dangling() {
@@ -220,6 +238,12 @@ type Elem interface {
 	// AllocBound returns the maximum number of elements to allocate
 	// when decoding this type.  Meaningful for slices and maps.
 	AllocBound() string
+
+	// AddCallback adds to the elem a Callback it should call at the end of marshaling
+	AddCallback(Callback)
+
+	// GetCallbacks fetches all callbacks this Elem stored.
+	GetCallbacks() []Callback
 
 	hidden()
 }
