@@ -9,6 +9,8 @@ import (
 
 	"github.com/algorand/msgp/gen"
 	"github.com/algorand/msgp/parse"
+	"github.com/daixiang0/gci/pkg/gci"
+	"github.com/daixiang0/gci/pkg/gci/sections"
 	"github.com/ttacon/chalk"
 	"golang.org/x/tools/imports"
 )
@@ -49,17 +51,30 @@ func PrintFile(file string, f *parse.FileSet, mode gen.Method, skipFormat bool) 
 }
 
 func format(file string, data []byte, skipFormat bool) error {
-	var out []byte
 	if skipFormat {
-		out = data
-	} else {
-		var err error
-		out, err = imports.Process(file, data, nil)
-		if err != nil {
-			return err
-		}
+		return ioutil.WriteFile(file, data, 0600)
 	}
-	return ioutil.WriteFile(file, out, 0600)
+	// first run through goimports (which cleans up unused deps & does gofmt)
+	out, err := imports.Process(file, data, nil)
+	if err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile(file, out, 0600); err != nil {
+		return err
+	}
+	// then run through gci to arrange import order
+	if err := gci.WriteFormattedFiles([]string{file}, gci.GciConfiguration{
+		Sections: gci.SectionList{
+			sections.StandardPackage{},
+			sections.DefaultSection{},
+			sections.Prefix{ImportPrefix: "github.com/algorand"},
+			sections.Prefix{ImportPrefix: "github.com/algorand/go-algorand"},
+		},
+		SectionSeparators: gci.SectionList{sections.NewLine{}},
+	}); err != nil {
+		return err
+	}
+	return nil
 }
 
 func goformat(file string, data []byte, skipFormat bool) <-chan error {
