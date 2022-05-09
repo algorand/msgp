@@ -4,8 +4,6 @@
 # Installation can still be performed with a
 # normal `go install`.
 
-# generated integration test files
-GGEN = ./_generated/generated.go ./_generated/generated_test.go
 # generated unit test files
 MGEN = ./msgp/defgen_test.go
 
@@ -20,20 +18,17 @@ $(BIN): */*.go
 
 install: $(BIN)
 
-$(GGEN): ./_generated/def.go
-	go generate ./_generated
-
 $(MGEN): ./msgp/defs_test.go
 	go generate ./msgp
 
 test: all
-	go test ./... ./_generated
+	go test -covermode=atomic -coverprofile=cover.out ./...
 
 bench: all
 	go test -bench ./...
 
 clean:
-	$(RM) $(GGEN) $(MGEN)
+	$(RM) $(MGEN)
 
 wipe: clean
 	$(RM) $(BIN)
@@ -41,7 +36,7 @@ wipe: clean
 get-deps:
 	go get -d -t ./...
 
-all: install $(GGEN) $(MGEN)
+all: install $(MGEN)
 
 # travis CI enters here
 travis:
