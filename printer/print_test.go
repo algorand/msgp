@@ -9,7 +9,7 @@ func TestWriteBuildHeader(t *testing.T) {
 	testBuf := bytes.NewBuffer(make([]byte, 0, 4096))
 	buildHeaders := []string{"foobar"}
 	expectedBuf := bytes.NewBuffer(make([]byte, 0, 4096))
-	expectedBuf.WriteString("//go:build foobar\n\n")
+	expectedBuf.WriteString("//go:build foobar\n// +build foobar\n\n")
 
 	writeBuildHeader(testBuf, buildHeaders)
 

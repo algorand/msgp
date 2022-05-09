@@ -145,6 +145,6 @@ func writeImportHeader(b *bytes.Buffer, imports ...string) {
 }
 
 func writeBuildHeader(b *bytes.Buffer, buildHeaders []string) {
-	headers := fmt.Sprintf("//go:build %s\n\n", strings.Join(buildHeaders, " "))
+	headers := fmt.Sprintf("//go:build %s\n// +build %s\n\n", strings.Join(buildHeaders, " "), strings.Join(buildHeaders, " "))
 	b.WriteString(headers)
 }
