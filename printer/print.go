@@ -122,7 +122,10 @@ func generate(f *parse.FileSet, mode gen.Method) (*bytes.Buffer, *bytes.Buffer, 
 		writePkgHeader(testbuf, f.Package)
 		writeImportHeader(
 			testbuf,
-			"github.com/algorand/msgp/msgp", "github.com/algorand/go-algorand/test/partitiontest", "testing")
+			"github.com/algorand/msgp/msgp",
+			"github.com/algorand/go-algorand/protocol",
+			"github.com/algorand/go-algorand/test/partitiontest",
+			"testing")
 		testwr = testbuf
 	}
 	funcbuf := bytes.NewBuffer(make([]byte, 0, 4096))
