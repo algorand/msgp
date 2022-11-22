@@ -164,15 +164,18 @@ func astuple(text []string, f *FileSet) error {
 	return nil
 }
 
-//msgp:sort {Type} {SortInterface}
+//msgp:sort {Type} {SortInterface} {LessFunction}
 func sortintf(text []string, f *FileSet) error {
-	if len(text) != 3 {
+	if len(text) != 4 {
 		return nil
 	}
 	sortType := strings.TrimSpace(text[1])
 	sortIntf := strings.TrimSpace(text[2])
+	lessFn := strings.TrimSpace(text[3])
 	gen.SetSortInterface(sortType, sortIntf)
 	infof("sorting %s using %s\n", sortType, sortIntf)
+	gen.SetLessFunction(sortType, lessFn)
+	infof("less fn %s using %s\n", sortType, lessFn)
 	return nil
 }
 

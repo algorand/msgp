@@ -226,6 +226,9 @@ type Elem interface {
 	// slice of this type.
 	SortInterface() string
 
+	// LessFunction returns the Less implementation for values of this type.
+	LessFunction() string
+
 	// Comparable returns whether the type is comparable, along the lines
 	// of the Go spec (https://golang.org/ref/spec#Comparison_operators),
 	// used to determine whether we can compare to a zero value to determine
@@ -977,4 +980,14 @@ func SetSortInterface(sorttype string, sortintf string) {
 	}
 
 	sortInterface[sorttype] = sortintf
+}
+
+var lessFunctions map[string]string
+
+func SetLessFunction(sorttype string, lessfn string) {
+	if lessFunctions == nil {
+		lessFunctions = make(map[string]string)
+	}
+
+	sortInterface[sorttype] = lessfn
 }
