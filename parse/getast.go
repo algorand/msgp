@@ -349,7 +349,7 @@ func (fs *FileSet) getTypeSpecs(f *ast.File) {
 						*ast.MapType,
 						*ast.Ident:
 
-						if strings.HasPrefix(s.Name.Name, "_Ctype_") {
+						if strings.HasPrefix(s.Name.Name, "_Ctype_") || s.Name.Name == "_" {
 							continue
 						}
 
