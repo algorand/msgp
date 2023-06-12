@@ -1,6 +1,6 @@
 module github.com/algorand/msgp
 
-go 1.17
+go 1.20
 
 require (
 	github.com/daixiang0/gci v0.3.2
