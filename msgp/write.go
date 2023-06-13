@@ -11,6 +11,16 @@ type Sizer interface {
 	Msgsize() int
 }
 
+// MaxSizer is an interface implemented
+// by types that can determine their max
+// when implemented.
+// This interface is optional, but
+// implementations may use this as a way to limit
+// number of bytes read during deserialization
+type MaxSizer interface {
+	MaxSize() int
+}
+
 // Require ensures that cap(old)-len(old) >= extra.
 // It might be that this is impossible because len(old)+extra
 // overflows int.  If so, Require will not grow the slice,
