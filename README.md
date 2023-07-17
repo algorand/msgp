@@ -1,4 +1,4 @@
 MessagePack Code Generator
 =======
 
-Based on [github.com/tinylib/msgp](github.com/tinylib/msgp)
+Based on [github.com/tinylib/msgp](https://github.com/tinylib/msgp)

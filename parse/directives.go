@@ -27,7 +27,7 @@ var directives = map[string]directive{
 	"tuple":      astuple,
 	"sort":       sortintf,
 	"allocbound": allocbound,
-	// _postunmarshalcheck is used to add callbacks to the end of unmarshling that are tied to a specific Element.
+	// _postunmarshalcheck is used to add callbacks to the end of un-marshalling that are tied to a specific Element.
 	_postunmarshalcheck: postunmarshalcheck,
 }
 

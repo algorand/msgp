@@ -155,21 +155,24 @@ func (c Callback) GetName() string            { return c.Fname }
 
 // common data/methods for every Elem
 type common struct {
-	vname, alias string
-	allocbound   string
-	callbacks    []Callback
+	vname, alias  string
+	allocbound    string
+	maxtotalbytes string
+	callbacks     []Callback
 }
 
-func (c *common) SetVarname(s string)      { c.vname = s }
-func (c *common) Varname() string          { return c.vname }
-func (c *common) Alias(typ string)         { c.alias = typ }
-func (c *common) SortInterface() string    { return "" }
-func (c *common) LessFunction() string     { return "" }
-func (c *common) SetAllocBound(s string)   { c.allocbound = s }
-func (c *common) AllocBound() string       { return c.allocbound }
-func (c *common) GetCallbacks() []Callback { return c.callbacks }
-func (c *common) AddCallback(cb Callback)  { c.callbacks = append(c.callbacks, cb) }
-func (c *common) hidden()                  {}
+func (c *common) SetVarname(s string)       { c.vname = s }
+func (c *common) Varname() string           { return c.vname }
+func (c *common) Alias(typ string)          { c.alias = typ }
+func (c *common) SortInterface() string     { return "" }
+func (c *common) LessFunction() string      { return "" }
+func (c *common) SetAllocBound(s string)    { c.allocbound = s }
+func (c *common) AllocBound() string        { return c.allocbound }
+func (c *common) SetMaxTotalBytes(s string) { c.maxtotalbytes = s }
+func (c *common) MaxTotalBytes() string     { return c.maxtotalbytes }
+func (c *common) GetCallbacks() []Callback  { return c.callbacks }
+func (c *common) AddCallback(cb Callback)   { c.callbacks = append(c.callbacks, cb) }
+func (c *common) hidden()                   {}
 
 func IsDangling(e Elem) bool {
 	if be, ok := e.(*BaseElem); ok && be.Dangling() {
@@ -244,6 +247,15 @@ type Elem interface {
 	// AllocBound returns the maximum number of elements to allocate
 	// when decoding this type.  Meaningful for slices and maps.
 	AllocBound() string
+
+	// SetMaxTotalBytes specifies the maximum number of bytes to allocate when
+	// decoding this type.
+	// Blank means unspecified bound.  "-" means no bound.
+	SetMaxTotalBytes(bound string)
+
+	// MaxTotalBytes specifies the maximum number of bytes to allocate when
+	// decoding this type. Meaningful for slices of strings or byteslices.
+	MaxTotalBytes() string
 
 	// AddCallback adds to the elem a Callback it should call at the end of marshaling
 	AddCallback(Callback)

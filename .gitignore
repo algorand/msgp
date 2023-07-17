@@ -9,4 +9,5 @@ msgp/cover.out
 *~
 *.coverprofile
 .idea/
+.vscode/
 cover.out

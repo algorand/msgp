@@ -167,10 +167,10 @@ func (f *FileSet) applyDirectives() {
 // into just one level of indirection.
 // In other words, if we have:
 //
-//  type A uint64
-//  type B A
-//  type C B
-//  type D C
+//	type A uint64
+//	type B A
+//	type C B
+//	type D C
 //
 // ... then we want to end up
 // figuring out that D is just a uint64.
@@ -252,6 +252,8 @@ func strToMethod(s string) gen.Method {
 		return gen.Marshal
 	case "unmarshal":
 		return gen.Unmarshal
+	case "maxsize":
+		return gen.MaxSize
 	default:
 		return 0
 	}
@@ -349,7 +351,7 @@ func (fs *FileSet) getTypeSpecs(f *ast.File) {
 						*ast.MapType,
 						*ast.Ident:
 
-						if strings.HasPrefix(s.Name.Name, "_Ctype_") {
+						if strings.HasPrefix(s.Name.Name, "_Ctype_") || s.Name.Name == "_" {
 							continue
 						}
 
@@ -407,6 +409,7 @@ func (fs *FileSet) getField(importPrefix string, f *ast.Field) []gen.StructField
 	var extension, flatten bool
 	var allocbound string
 	var allocbounds []string
+	var maxtotalbytes string
 
 	// always flatten embedded structs
 	flatten = true
@@ -422,6 +425,9 @@ func (fs *FileSet) getField(importPrefix string, f *ast.Field) []gen.StructField
 			}
 			if strings.HasPrefix(tag, "allocbound=") {
 				allocbounds = append(allocbounds, strings.Split(tag, "=")[1])
+			}
+			if strings.HasPrefix(tag, "maxtotalbytes=") {
+				maxtotalbytes = strings.Split(tag, "=")[1]
 			}
 		}
 		// ignore "-" fields
@@ -472,6 +478,31 @@ func (fs *FileSet) getField(importPrefix string, f *ast.Field) []gen.StructField
 		}
 		return sf
 	}
+
+	// resolve local package type aliases that referenced in this package structs
+	resolveAlias := func(el gen.Elem) {
+		if a, ok := fs.Aliases[el.TypeName()]; ok {
+			if b, ok := a.(*ast.SelectorExpr); ok {
+				if c, ok := b.X.(*ast.Ident); ok {
+					el.Alias(c.Name + "." + b.Sel.Name)
+				}
+			} else if b, ok := a.(*ast.Ident); ok {
+				el.Alias(b.Name)
+			}
+		}
+	}
+	// resolve field alias type
+	resolveAlias(ex)
+	// resolve field map type that have alias type key or value
+	if m, ok := ex.(*gen.Map); ok {
+		resolveAlias(m.Key)
+		resolveAlias(m.Value)
+	}
+	// resolve field slice type that have alias type element
+	if m, ok := ex.(*gen.Slice); ok {
+		resolveAlias(m.Els)
+	}
+
 	sf[0].FieldElem = ex
 	if sf[0].FieldTag == "" {
 		sf[0].FieldTag = sf[0].FieldName
@@ -480,6 +511,7 @@ func (fs *FileSet) getField(importPrefix string, f *ast.Field) []gen.StructField
 		sf[0].FieldTagParts = []string{sf[0].FieldName}
 	}
 	sf[0].FieldElem.SetAllocBound(allocbound)
+	sf[0].FieldElem.SetMaxTotalBytes(maxtotalbytes)
 
 	// validate extension
 	if extension {
@@ -543,9 +575,9 @@ func (fs *FileSet) getFieldsFromEmbeddedStruct(importPrefix string, f ast.Expr) 
 //
 // so, for a struct like
 //
-//	type A struct {
-//		io.Writer
-//  }
+//		type A struct {
+//			io.Writer
+//	 }
 //
 // we want "Writer"
 func embedded(f ast.Expr) string {

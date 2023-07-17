@@ -59,7 +59,7 @@ func main() {
 
 	var mode gen.Method
 	if *marshal {
-		mode |= (gen.Marshal | gen.Unmarshal | gen.Size | gen.IsZero)
+		mode |= (gen.Marshal | gen.Unmarshal | gen.Size | gen.IsZero | gen.MaxSize)
 	}
 	if *tests {
 		mode |= gen.Test

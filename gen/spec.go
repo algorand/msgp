@@ -39,11 +39,13 @@ func (m Method) String() string {
 		return "size"
 	case IsZero:
 		return "iszero"
+	case MaxSize:
+		return "maxsize"
 	case Test:
 		return "test"
 	default:
 		// return e.g. "marshal+unmarshal+test"
-		modes := [...]Method{Marshal, Unmarshal, Size, IsZero, Test}
+		modes := [...]Method{Marshal, Unmarshal, Size, IsZero, MaxSize, Test}
 		any := false
 		nm := ""
 		for _, mm := range modes {
@@ -71,6 +73,8 @@ func strtoMeth(s string) Method {
 		return Size
 	case "iszero":
 		return IsZero
+	case "maxsize":
+		return MaxSize
 	case "test":
 		return Test
 	default:
@@ -84,6 +88,7 @@ const (
 	Size                                                 // msgp.Sizer
 	IsZero                                               // implement MsgIsZero()
 	Test                                                 // generate tests
+	MaxSize                                              // msgp.MaxSize
 	invalidmeth                                          // this isn't a method
 	marshaltest = Marshal | Unmarshal | Test             // tests for Marshaler and Unmarshaler
 )
@@ -108,6 +113,9 @@ func NewPrinter(m Method, topics *Topics, out io.Writer, tests io.Writer) *Print
 	}
 	if m.isset(IsZero) {
 		gens = append(gens, isZeros(out, topics))
+	}
+	if m.isset(MaxSize) {
+		gens = append(gens, maxSizes(out, topics))
 	}
 	if m.isset(marshaltest) {
 		gens = append(gens, mtest(tests))
