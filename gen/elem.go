@@ -164,6 +164,7 @@ func (c *common) SetVarname(s string)      { c.vname = s }
 func (c *common) Varname() string          { return c.vname }
 func (c *common) Alias(typ string)         { c.alias = typ }
 func (c *common) SortInterface() string    { return "" }
+func (c *common) LessFunction() string     { return "" }
 func (c *common) SetAllocBound(s string)   { c.allocbound = s }
 func (c *common) AllocBound() string       { return c.allocbound }
 func (c *common) GetCallbacks() []Callback { return c.callbacks }

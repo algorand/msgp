@@ -313,9 +313,17 @@ func (u *unmarshalGen) gMap(m *Map) {
 	u.msgs = append(u.msgs, resizemsgs...)
 
 	// loop and get key,value
+	last := randIdent()
+	lastSet := randIdent()
+	u.p.printf("\nvar %s %s", last, m.Key.TypeName())
+	u.p.declare(lastSet, "bool")
 	u.p.printf("\nfor %s > 0 {", sz)
 	u.p.printf("\nvar %s %s; var %s %s; %s--", m.Keyidx, m.Key.TypeName(), m.Validx, m.Value.TypeName(), sz)
 	next(u, m.Key)
+	u.p.printf("\nif %s && !%s(%s, %s) {", lastSet, m.LessFunction(), last, m.Keyidx)
+	u.p.printf("\nerr= msgp.ErrNonCanoncial{}")
+	u.p.printf("\nreturn")
+	u.p.printf("\n}")
 	u.ctx.PushVar(m.Keyidx)
 	next(u, m.Value)
 	u.ctx.Pop()
