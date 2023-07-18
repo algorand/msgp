@@ -913,6 +913,14 @@ func (s *BaseElem) SortInterface() string {
 	return ""
 }
 
+func (s *BaseElem) LessFunction() string {
+	lessThan, ok := lessFunctions[s.TypeName()]
+	if ok {
+		return lessThan
+	}
+	return ""
+}
+
 func (k Primitive) String() string {
 	switch k {
 	case String:
@@ -1002,5 +1010,5 @@ func SetLessFunction(sorttype string, lessfn string) {
 		lessFunctions = make(map[string]string)
 	}
 
-	sortInterface[sorttype] = lessfn
+	lessFunctions[sorttype] = lessfn
 }
