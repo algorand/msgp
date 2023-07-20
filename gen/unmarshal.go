@@ -144,8 +144,13 @@ func (u *unmarshalGen) mapstruct(s *Struct) {
 	u.needsField()
 	sz := randIdent()
 	isnil := randIdent()
+	last := randIdent()
+	lastIsSet := randIdent()
 	u.p.declare(sz, "int")
+	u.p.declare(last, "string")
+	u.p.declare(lastIsSet, "bool")
 	u.p.declare(isnil, "bool")
+	u.p.printf("\n_=%s;\n_=%s", last, lastIsSet) // we might not use these for empty structs
 
 	// go-codec compat: decode an array as sequential elements from this struct,
 	// in the order they are defined in the Go type (as opposed to canonical
@@ -154,6 +159,7 @@ func (u *unmarshalGen) mapstruct(s *Struct) {
 	u.p.printf("\nif _, ok := err.(msgp.TypeError); ok {")
 
 	u.assignAndCheck(sz, isnil, arrayHeader)
+	u.p.printf("\nerr = &msgp.ErrNonCanonical{}")
 
 	u.ctx.PushString("struct-from-array")
 	for i := range s.Fields {
@@ -195,13 +201,19 @@ func (u *unmarshalGen) mapstruct(s *Struct) {
 			return
 		}
 		u.p.printf("\ncase \"%s\":", s.Fields[i].FieldTag)
+		u.p.printf("\nif %s && %s > \"%s\" {", lastIsSet, last, s.Fields[i].FieldTag)
+		u.p.print("\nerr = &msgp.ErrNonCanonical{}")
+		u.p.printf("\nreturn")
+		u.p.print("\n}")
 		u.ctx.PushString(s.Fields[i].FieldName)
 		next(u, s.Fields[i].FieldElem)
 		u.ctx.Pop()
+		u.p.printf("\n%s = \"%s\"", last, s.Fields[i].FieldTag)
 	}
 	u.p.print("\ndefault:\nerr = msgp.ErrNoField(string(field))")
 	u.p.wrapErrCheck(u.ctx.ArgsStr())
 	u.p.print("\n}") // close switch
+	u.p.printf("\n%s = true", lastIsSet)
 	u.p.print("\n}") // close for loop
 	u.p.print("\n}") // close else statement for array decode
 }
