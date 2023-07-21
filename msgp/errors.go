@@ -355,5 +355,4 @@ func (e *ErrNonCanonical) Error() string {
 }
 
 // Resumable returns false for errNonCanonical
-// TODO: probably want to make it Resumable?
 func (e *ErrNonCanonical) Resumable() bool { return false }
