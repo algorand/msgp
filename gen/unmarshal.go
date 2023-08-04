@@ -174,7 +174,7 @@ func (u *unmarshalGen) mapstruct(s *Struct) {
 
 	u.assignAndCheck(sz, isnil, arrayHeader)
 
-	u.p.print("\nif validate {")
+	u.p.print("\nif validate {")  // map encoded as array => non canonical
 	u.p.print("\nerr = &msgp.ErrNonCanonical{}")
 	u.p.print("\nreturn")
 	u.p.print("\n}")
