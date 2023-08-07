@@ -356,3 +356,16 @@ func (e *ErrNonCanonical) Error() string {
 
 // Resumable returns false for errNonCanonical
 func (e *ErrNonCanonical) Resumable() bool { return false }
+
+// ErrNonCanonical is returned
+// when unmarshaller detects that
+// the message is not canonically encoded (pre-sorted)
+type ErrMissingLessFn struct{}
+
+// Error implements error
+func (e *ErrMissingLessFn) Error() string {
+	return fmt.Sprintf("msgp: can't validate canonicity: missing LessFn")
+}
+
+// Resumable returns false for errNonCanonical
+func (e *ErrMissingLessFn) Resumable() bool { return false }

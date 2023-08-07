@@ -363,12 +363,17 @@ func (u *unmarshalGen) gMap(m *Map) {
 	u.p.printf("\nfor %s > 0 {", sz)
 	u.p.printf("\nvar %s %s; var %s %s; %s--", m.Keyidx, m.Key.TypeName(), m.Validx, m.Value.TypeName(), sz)
 	next(u, m.Key)
+	u.p.printf("\nif validate {")
 	if m.Key.LessFunction() != "" {
-		u.p.printf("\nif validate && %s && %s(%s, %s) {", lastSet, m.Key.LessFunction(), m.Keyidx, last)
+		u.p.printf("\nif %s && %s(%s, %s) {", lastSet, m.Key.LessFunction(), m.Keyidx, last)
 		u.p.printf("\nerr = &msgp.ErrNonCanonical{}")
 		u.p.printf("\nreturn")
 		u.p.printf("\n}")
+	} else {
+		u.p.printf("\nerr = &msgp.ErrMissingLessFn{}")
+		u.p.printf("\nreturn")
 	}
+	u.p.printf("\n}") // close if validate block
 	u.p.printf("\n%s=%s", last, m.Keyidx)
 	u.p.printf("\n%s=true", lastSet)
 	u.ctx.PushVar(m.Keyidx)
