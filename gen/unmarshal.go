@@ -60,12 +60,17 @@ func (u *unmarshalGen) Execute(p Elem) ([]string, error) {
 		u.p.printf("\n  return ((*(%s))(%s)).UnmarshalMsg(bts)", baseType, c)
 		u.p.printf("\n}")
 
+		u.p.printf("\nfunc (%s %s) UnmarshalValidateMsg(bts []byte) ([]byte, error) {", c, methodRecv)
+		u.p.printf("\n  return ((*(%s))(%s)).UnmarshalValidateMsg(bts)", baseType, c)
+		u.p.printf("\n}")
+
 		u.p.printf("\nfunc (_ %[2]s) CanUnmarshalMsg(%[1]s interface{}) bool {", c, methodRecv)
 		u.p.printf("\n  _, ok := (%s).(%s)", c, methodRecv)
 		u.p.printf("\n  return ok")
 		u.p.printf("\n}")
 
 		u.topics.Add(methodRecv, "UnmarshalMsg")
+		u.topics.Add(methodRecv, "UnmarshalValidateMsg")
 		u.topics.Add(methodRecv, "CanUnmarshalMsg")
 
 		return u.msgs, u.p.err
@@ -75,7 +80,7 @@ func (u *unmarshalGen) Execute(p Elem) ([]string, error) {
 	c := p.Varname()
 	methodRecv := methodReceiver(p)
 
-	u.p.printf("\nfunc (%s %s) UnmarshalMsg(bts []byte) (o []byte, err error) {", c, methodRecv)
+	u.p.printf("\nfunc (%s %s) unmarshalMsg(bts []byte, validate bool) (o []byte, err error) {", c, methodRecv)
 	next(u, p)
 	u.p.print("\no = bts")
 
@@ -91,12 +96,21 @@ func (u *unmarshalGen) Execute(p Elem) ([]string, error) {
 	}
 	u.p.nakedReturn()
 
+	u.p.printf("\nfunc (%s %s) UnmarshalMsg(bts []byte) (o []byte, err error) {", c, methodRecv)
+	u.p.printf("\n return %s.unmarshalMsg(bts, false)", c)
+	u.p.printf("\n}")
+
+	u.p.printf("\nfunc (%s %s) UnmarshalValidateMsg(bts []byte) (o []byte, err error) {", c, methodRecv)
+	u.p.printf("\n return %s.unmarshalMsg(bts, true)", c)
+	u.p.printf("\n}")
+
 	u.p.printf("\nfunc (_ %[2]s) CanUnmarshalMsg(%[1]s interface{}) bool {", c, methodRecv)
 	u.p.printf("\n  _, ok := (%s).(%s)", c, methodRecv)
 	u.p.printf("\n  return ok")
 	u.p.printf("\n}")
 
 	u.topics.Add(methodRecv, "UnmarshalMsg")
+	u.topics.Add(methodRecv, "UnmarshalValidateMsg")
 	u.topics.Add(methodRecv, "CanUnmarshalMsg")
 
 	return u.msgs, u.p.err
@@ -144,8 +158,13 @@ func (u *unmarshalGen) mapstruct(s *Struct) {
 	u.needsField()
 	sz := randIdent()
 	isnil := randIdent()
+	last := randIdent()
+	lastIsSet := randIdent()
 	u.p.declare(sz, "int")
+	u.p.declare(last, "string")
+	u.p.declare(lastIsSet, "bool")
 	u.p.declare(isnil, "bool")
+	u.p.printf("\n_=%s;\n_=%s", last, lastIsSet) // we might not use these for empty structs
 
 	// go-codec compat: decode an array as sequential elements from this struct,
 	// in the order they are defined in the Go type (as opposed to canonical
@@ -154,6 +173,11 @@ func (u *unmarshalGen) mapstruct(s *Struct) {
 	u.p.printf("\nif _, ok := err.(msgp.TypeError); ok {")
 
 	u.assignAndCheck(sz, isnil, arrayHeader)
+
+	u.p.print("\nif validate {")  // map encoded as array => non canonical
+	u.p.print("\nerr = &msgp.ErrNonCanonical{}")
+	u.p.print("\nreturn")
+	u.p.print("\n}")
 
 	u.ctx.PushString("struct-from-array")
 	for i := range s.Fields {
@@ -195,13 +219,19 @@ func (u *unmarshalGen) mapstruct(s *Struct) {
 			return
 		}
 		u.p.printf("\ncase \"%s\":", s.Fields[i].FieldTag)
+		u.p.printf("\nif validate && %s && \"%s\" < %s {", lastIsSet, s.Fields[i].FieldTag, last)
+		u.p.print("\nerr = &msgp.ErrNonCanonical{}")
+		u.p.printf("\nreturn")
+		u.p.print("\n}")
 		u.ctx.PushString(s.Fields[i].FieldName)
 		next(u, s.Fields[i].FieldElem)
 		u.ctx.Pop()
+		u.p.printf("\n%s = \"%s\"", last, s.Fields[i].FieldTag)
 	}
 	u.p.print("\ndefault:\nerr = msgp.ErrNoField(string(field))")
 	u.p.wrapErrCheck(u.ctx.ArgsStr())
 	u.p.print("\n}") // close switch
+	u.p.printf("\n%s = true", lastIsSet)
 	u.p.print("\n}") // close for loop
 	u.p.print("\n}") // close else statement for array decode
 }
@@ -325,9 +355,27 @@ func (u *unmarshalGen) gMap(m *Map) {
 	u.msgs = append(u.msgs, resizemsgs...)
 
 	// loop and get key,value
+	last := randIdent()
+	lastSet := randIdent()
+	u.p.printf("\nvar %s %s; _ = %s", last, m.Key.TypeName(), last) // we might not use the sort if it's not defined
+	u.p.declare(lastSet, "bool")
+	u.p.printf("\n_ = %s", lastSet) // we might not use the flag
 	u.p.printf("\nfor %s > 0 {", sz)
 	u.p.printf("\nvar %s %s; var %s %s; %s--", m.Keyidx, m.Key.TypeName(), m.Validx, m.Value.TypeName(), sz)
 	next(u, m.Key)
+	u.p.printf("\nif validate {")
+	if m.Key.LessFunction() != "" {
+		u.p.printf("\nif %s && %s(%s, %s) {", lastSet, m.Key.LessFunction(), m.Keyidx, last)
+		u.p.printf("\nerr = &msgp.ErrNonCanonical{}")
+		u.p.printf("\nreturn")
+		u.p.printf("\n}")
+	} else {
+		u.p.printf("\nerr = &msgp.ErrMissingLessFn{}")
+		u.p.printf("\nreturn")
+	}
+	u.p.printf("\n}") // close if validate block
+	u.p.printf("\n%s=%s", last, m.Keyidx)
+	u.p.printf("\n%s=true", lastSet)
 	u.ctx.PushVar(m.Keyidx)
 	next(u, m.Value)
 	u.ctx.Pop()

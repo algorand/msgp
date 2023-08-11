@@ -81,7 +81,6 @@ func Resumable(e error) bool {
 //
 // ErrShortBytes is not wrapped with any context due to backward compatibility
 // issues with the public API.
-//
 func WrapError(err error, ctx ...interface{}) error {
 	switch e := err.(type) {
 	case errShort:
@@ -344,3 +343,29 @@ func (e *ErrUnsupportedType) withContext(ctx string) error {
 	o.ctx = addCtx(o.ctx, ctx)
 	return &o
 }
+
+// ErrNonCanonical is returned
+// when unmarshaller detects that
+// the message is not canonically encoded (pre-sorted)
+type ErrNonCanonical struct{}
+
+// Error implements error
+func (e *ErrNonCanonical) Error() string {
+	return fmt.Sprintf("msgp: non-canonical encoding detected")
+}
+
+// Resumable returns false for errNonCanonical
+func (e *ErrNonCanonical) Resumable() bool { return false }
+
+// ErrNonCanonical is returned
+// when unmarshaller detects that
+// the message is not canonically encoded (pre-sorted)
+type ErrMissingLessFn struct{}
+
+// Error implements error
+func (e *ErrMissingLessFn) Error() string {
+	return fmt.Sprintf("msgp: can't validate canonicity: missing LessFn")
+}
+
+// Resumable returns false for errNonCanonical
+func (e *ErrMissingLessFn) Resumable() bool { return false }

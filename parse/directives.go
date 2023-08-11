@@ -31,12 +31,31 @@ var directives = map[string]directive{
 	_postunmarshalcheck: postunmarshalcheck,
 }
 
+// map of base types with predefined LessFunctions used in the sort directive
+var lessFns = map[string]string{
+	"int":     "msgp.IntLess",
+	"int8":    "msgp.Int8Less",
+	"int16":   "msgp.Int16Less",
+	"int32":   "msgp.Int32Less",
+	"int64":   "msgp.Int64Less",
+	"uint":    "msgp.UintLess",
+	"uint8":   "msgp.Uint8Less",
+	"uint16":  "msgp.Uint16Less",
+	"uint32":  "msgp.Uint32Less",
+	"uint64":  "msgp.Uint64Less",
+	"float32": "msgp.Float32Less",
+	"float64": "msgp.Float64Less",
+	"string":  "msgp.StringLess",
+	"[]byte":  "msgp.BytesLess",
+}
+
 const _postunmarshalcheck = "postunmarshalcheck"
 
 var errNotEnoughArguments = errors.New("postunmarshalcheck did not receive enough arguments. expected at least 3")
 
-//msgp:postunmarshalcheck {Type} {funcName} {funcName} ...
 // the functions should have no params, and output zero.
+//
+//msgp:postunmarshalcheck {Type} {funcName} {funcName} ...
 func postunmarshalcheck(text []string, f *FileSet) error {
 	if len(text) < 3 {
 		return errNotEnoughArguments
@@ -164,15 +183,25 @@ func astuple(text []string, f *FileSet) error {
 	return nil
 }
 
-//msgp:sort {Type} {SortInterface}
+//msgp:sort {Type} {SortInterface} {LessFunction}
 func sortintf(text []string, f *FileSet) error {
-	if len(text) != 3 {
+	if len(text) != 4 && len(text) != 3 {
 		return nil
 	}
 	sortType := strings.TrimSpace(text[1])
 	sortIntf := strings.TrimSpace(text[2])
 	gen.SetSortInterface(sortType, sortIntf)
 	infof("sorting %s using %s\n", sortType, sortIntf)
+	var lessFn string
+	if len(text) == 4 {
+		lessFn = strings.TrimSpace(text[3])
+	} else if fn, ok := lessFns[sortType]; ok {
+		lessFn = fn
+	} else {
+		panic(fmt.Sprintf("no default less function for %s and no function is provided", sortType))
+	}
+	gen.SetLessFunction(sortType, lessFn)
+	infof("less fn %s using %s\n", sortType, lessFn)
 	return nil
 }
 

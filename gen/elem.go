@@ -165,6 +165,7 @@ func (c *common) SetVarname(s string)       { c.vname = s }
 func (c *common) Varname() string           { return c.vname }
 func (c *common) Alias(typ string)          { c.alias = typ }
 func (c *common) SortInterface() string     { return "" }
+func (c *common) LessFunction() string      { return "" }
 func (c *common) SetAllocBound(s string)    { c.allocbound = s }
 func (c *common) AllocBound() string        { return c.allocbound }
 func (c *common) SetMaxTotalBytes(s string) { c.maxtotalbytes = s }
@@ -228,6 +229,9 @@ type Elem interface {
 	// SortInterface returns the sort.Interface for sorting a
 	// slice of this type.
 	SortInterface() string
+
+	// LessFunction returns the Less implementation for values of this type.
+	LessFunction() string
 
 	// Comparable returns whether the type is comparable, along the lines
 	// of the Go spec (https://golang.org/ref/spec#Comparison_operators),
@@ -909,6 +913,14 @@ func (s *BaseElem) SortInterface() string {
 	return ""
 }
 
+func (s *BaseElem) LessFunction() string {
+	lessThan, ok := lessFunctions[s.TypeName()]
+	if ok {
+		return lessThan
+	}
+	return ""
+}
+
 func (k Primitive) String() string {
 	switch k {
 	case String:
@@ -989,4 +1001,14 @@ func SetSortInterface(sorttype string, sortintf string) {
 	}
 
 	sortInterface[sorttype] = sortintf
+}
+
+var lessFunctions map[string]string
+
+func SetLessFunction(sorttype string, lessfn string) {
+	if lessFunctions == nil {
+		lessFunctions = make(map[string]string)
+	}
+
+	lessFunctions[sorttype] = lessfn
 }
