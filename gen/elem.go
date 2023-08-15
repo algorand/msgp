@@ -799,6 +799,8 @@ func (s *BaseElem) BaseType() string {
 		return "[]byte"
 	case Time:
 		return "time.Time"
+	case Duration:
+		return "time.Duration"
 	case Ext:
 		return "msgp.Extension"
 
