@@ -347,15 +347,17 @@ func (e *ErrUnsupportedType) withContext(ctx string) error {
 // ErrNonCanonical is returned
 // when unmarshaller detects that
 // the message is not canonically encoded (pre-sorted)
-type ErrNonCanonical struct{}
+type ErrNonCanonical struct {
+	reason string
+}
 
 // Error implements error
-func (e *ErrNonCanonical) Error() string {
-	return fmt.Sprintf("msgp: non-canonical encoding detected")
+func (e ErrNonCanonical) Error() string {
+	return fmt.Sprintf("msgp: non-canonical encoding: %s", e.reason)
 }
 
 // Resumable returns false for errNonCanonical
-func (e *ErrNonCanonical) Resumable() bool { return false }
+func (e ErrNonCanonical) Resumable() bool { return false }
 
 // ErrNonCanonical is returned
 // when unmarshaller detects that
