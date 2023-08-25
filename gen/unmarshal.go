@@ -175,7 +175,7 @@ func (u *unmarshalGen) mapstruct(s *Struct) {
 	u.assignAndCheck(sz, isnil, arrayHeader)
 
 	u.p.print("\nif validate {") // map encoded as array => non canonical
-	u.p.print("\nerr = &msgp.ErrNonCanonical{reason: \"map encoded as array\"}")
+	u.p.print("\nerr = msgp.ErrNonCanonical{reason: \"map encoded as array\"}")
 	u.p.print("\nreturn")
 	u.p.print("\n}")
 
@@ -220,12 +220,18 @@ func (u *unmarshalGen) mapstruct(s *Struct) {
 		}
 		u.p.printf("\ncase \"%s\":", s.Fields[i].FieldTag)
 		u.p.printf("\nif validate && %s && \"%s\" < %s {", lastIsSet, s.Fields[i].FieldTag, last)
-		u.p.print("\nerr = &msgp.ErrNonCanonical{reason: \"struct fields out of order\"}")
+		u.p.print("\nerr = msgp.ErrNonCanonical{reason: \"struct fields out of order\"}")
 		u.p.printf("\nreturn")
 		u.p.print("\n}")
 		u.ctx.PushString(s.Fields[i].FieldName)
 		next(u, s.Fields[i].FieldElem)
 		u.ctx.Pop()
+		if ize := s.Fields[i].FieldElem.IfZeroExpr(); ize != "" && isFieldOmitEmpty(s.Fields[i], s) {
+			u.p.printf("\nif validate && %s {", ize)
+			u.p.printf("\nerr = msgp.ErrNonCanonical{reason: \"zero value for omitempty field\"}")
+			u.p.printf("\nreturn")
+			u.p.printf("\n}")
+		}
 		u.p.printf("\n%s = \"%s\"", last, s.Fields[i].FieldTag)
 	}
 	u.p.print("\ndefault:\nerr = msgp.ErrNoField(string(field))")
@@ -268,7 +274,11 @@ func (u *unmarshalGen) gBase(b *BaseElem) {
 			u.p.printf("\nreturn")
 			u.p.printf("\n}")
 		}
+		u.p.printf("\n if validate {")
+		u.p.printf("\n%s, bts, err = msgp.ReadBytesBytesCanonical(bts, %s)", refname, lowered)
+		u.p.printf("\n} else {")
 		u.p.printf("\n%s, bts, err = msgp.ReadBytesBytes(bts, %s)", refname, lowered)
+		u.p.printf("\n}")
 	case Ext:
 		u.p.printf("\nbts, err = msgp.ReadExtensionBytes(bts, %s)", lowered)
 	case IDENT:
@@ -285,6 +295,12 @@ func (u *unmarshalGen) gBase(b *BaseElem) {
 			u.p.printf("\n}")
 		}
 		u.p.printf("\n%s, bts, err = msgp.ReadStringBytes(bts)", refname)
+	case Uint, Uint8, Uint16, Uint32, Uint64, Int, Int8, Int16, Int32, Int64:
+		u.p.printf("\nif validate {")
+		u.p.printf("\n%s, bts, err = msgp.Read%sBytesCanonical(bts)", refname, b.BaseName())
+		u.p.printf("\n} else {")
+		u.p.printf("\n %s, bts, err = msgp.Read%sBytes(bts)", refname, b.BaseName())
+		u.p.printf("\n}")
 	default:
 		u.p.printf("\n%s, bts, err = msgp.Read%sBytes(bts)", refname, b.BaseName())
 	}
@@ -372,7 +388,7 @@ func (u *unmarshalGen) gMap(m *Map) {
 	u.p.printf("\nif validate {")
 	if m.Key.LessFunction() != "" {
 		u.p.printf("\nif %s && %s(%s, %s) {", lastSet, m.Key.LessFunction(), m.Keyidx, last)
-		u.p.printf("\nerr = &msgp.ErrNonCanonical{reason: \"map keys out of order\"}")
+		u.p.printf("\nerr = msgp.ErrNonCanonical{reason: \"map keys out of order\"}")
 		u.p.printf("\nreturn")
 		u.p.printf("\n}")
 	} else {
