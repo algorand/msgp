@@ -344,20 +344,20 @@ func (e *ErrUnsupportedType) withContext(ctx string) error {
 	return &o
 }
 
-// ErrNonCanonical is returned
+// errNonCanonical is returned
 // when unmarshaller detects that
 // the message is not canonically encoded (pre-sorted)
-type ErrNonCanonical struct {
+type errNonCanonical struct {
 	reason string
 }
 
 // Error implements error
-func (e ErrNonCanonical) Error() string {
+func (e errNonCanonical) Error() string {
 	return fmt.Sprintf("msgp: non-canonical encoding: %s", e.reason)
 }
 
 // Resumable returns false for errNonCanonical
-func (e ErrNonCanonical) Resumable() bool { return false }
+func (e errNonCanonical) Resumable() bool { return false }
 
 // ErrNonCanonical is returned
 // when unmarshaller detects that
@@ -365,9 +365,13 @@ func (e ErrNonCanonical) Resumable() bool { return false }
 type ErrMissingLessFn struct{}
 
 // Error implements error
-func (e *ErrMissingLessFn) Error() string {
+func (e ErrMissingLessFn) Error() string {
 	return fmt.Sprintf("msgp: can't validate canonicity: missing LessFn")
 }
 
 // Resumable returns false for errNonCanonical
-func (e *ErrMissingLessFn) Resumable() bool { return false }
+func (e ErrMissingLessFn) Resumable() bool { return false }
+
+func ErrNonCanonical(reason string) error {
+	return errNonCanonical{reason}
+}

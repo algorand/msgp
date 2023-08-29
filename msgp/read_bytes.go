@@ -436,10 +436,10 @@ func ReadInt64BytesCanonical(b []byte) (i int64, o []byte, err error) {
 		i = int64(getMint8(b))
 		o = b[2:]
 		if (i << 7) == 0 {
-			err = ErrNonCanonical{reason: "non-minimal encoding length"}
+			err = errNonCanonical{reason: "non-minimal encoding length"}
 		}
 		if i > 0 {
-			err = ErrNonCanonical{reason: "positive value encoded as signed"}
+			err = errNonCanonical{reason: "positive value encoded as signed"}
 		}
 		return
 	case muint8:
@@ -450,7 +450,7 @@ func ReadInt64BytesCanonical(b []byte) (i int64, o []byte, err error) {
 		i = int64(getMuint8(b))
 		o = b[2:]
 		if (i << 7) == 0 {
-			err = ErrNonCanonical{reason: "non-minimal encoding length"}
+			err = errNonCanonical{reason: "non-minimal encoding length"}
 		}
 		return
 
@@ -462,10 +462,10 @@ func ReadInt64BytesCanonical(b []byte) (i int64, o []byte, err error) {
 		i = int64(getMint16(b))
 		o = b[3:]
 		if (i << 8) == 0 {
-			err = ErrNonCanonical{reason: "non-minimal encoding length"}
+			err = errNonCanonical{reason: "non-minimal encoding length"}
 		}
 		if i > 0 {
-			err = ErrNonCanonical{reason: "positive value encoded as signed"}
+			err = errNonCanonical{reason: "positive value encoded as signed"}
 		}
 		return
 
@@ -476,7 +476,7 @@ func ReadInt64BytesCanonical(b []byte) (i int64, o []byte, err error) {
 		}
 		i = int64(getMuint16(b))
 		if (i << 8) == 0 {
-			err = ErrNonCanonical{reason: "non-minimal encoding length"}
+			err = errNonCanonical{reason: "non-minimal encoding length"}
 		}
 		o = b[3:]
 		return
@@ -489,10 +489,10 @@ func ReadInt64BytesCanonical(b []byte) (i int64, o []byte, err error) {
 		i = int64(getMint32(b))
 		o = b[5:]
 		if (i << 16) == 0 {
-			err = ErrNonCanonical{reason: "non-minimal encoding length"}
+			err = errNonCanonical{reason: "non-minimal encoding length"}
 		}
 		if i > 0 {
-			err = ErrNonCanonical{reason: "positive value encoded as signed"}
+			err = errNonCanonical{reason: "positive value encoded as signed"}
 		}
 		return
 
@@ -504,7 +504,7 @@ func ReadInt64BytesCanonical(b []byte) (i int64, o []byte, err error) {
 		i = int64(getMuint32(b))
 		o = b[5:]
 		if (i << 16) == 0 {
-			err = ErrNonCanonical{reason: "non-minimal encoding length"}
+			err = errNonCanonical{reason: "non-minimal encoding length"}
 		}
 		return
 
@@ -516,10 +516,10 @@ func ReadInt64BytesCanonical(b []byte) (i int64, o []byte, err error) {
 		i = int64(getMint64(b))
 		o = b[9:]
 		if (i << 32) == 0 {
-			err = ErrNonCanonical{reason: "non-minimal encoding length"}
+			err = errNonCanonical{reason: "non-minimal encoding length"}
 		}
 		if i > 0 {
-			err = ErrNonCanonical{reason: "positive value encoded as signed"}
+			err = errNonCanonical{reason: "positive value encoded as signed"}
 		}
 		return
 
@@ -539,7 +539,7 @@ func ReadInt64BytesCanonical(b []byte) (i int64, o []byte, err error) {
 		i = int64(u)
 		o = b[9:]
 		if (i << 32) == 0 {
-			err = ErrNonCanonical{reason: "non-minimal encoding length"}
+			err = errNonCanonical{reason: "non-minimal encoding length"}
 		}
 		return
 
@@ -781,7 +781,7 @@ func ReadUint64BytesCanonical(b []byte) (u uint64, o []byte, err error) {
 		return
 
 	case mint8:
-		err = ErrNonCanonical{reason: "unsigned value encoded as signed"}
+		err = errNonCanonical{reason: "unsigned value encoded as signed"}
 		return
 	case muint8:
 		if l < 2 {
@@ -791,12 +791,12 @@ func ReadUint64BytesCanonical(b []byte) (u uint64, o []byte, err error) {
 		u = uint64(getMuint8(b))
 		o = b[2:]
 		if (u << 7) == 0 {
-			err = ErrNonCanonical{reason: "non-minimal encoding length"}
+			err = errNonCanonical{reason: "non-minimal encoding length"}
 		}
 		return
 
 	case mint16:
-		err = ErrNonCanonical{reason: "unsigned value encoded as signed"}
+		err = errNonCanonical{reason: "unsigned value encoded as signed"}
 		return
 
 	case muint16:
@@ -807,12 +807,12 @@ func ReadUint64BytesCanonical(b []byte) (u uint64, o []byte, err error) {
 		u = uint64(getMuint16(b))
 		o = b[3:]
 		if (u << 8) == 0 {
-			err = ErrNonCanonical{reason: "non-minimal encoding length"}
+			err = errNonCanonical{reason: "non-minimal encoding length"}
 		}
 		return
 
 	case mint32:
-		err = ErrNonCanonical{reason: "unsigned value encoded as signed"}
+		err = errNonCanonical{reason: "unsigned value encoded as signed"}
 		return
 	case muint32:
 		if l < 5 {
@@ -822,12 +822,12 @@ func ReadUint64BytesCanonical(b []byte) (u uint64, o []byte, err error) {
 		u = uint64(getMuint32(b))
 		o = b[5:]
 		if (u << 16) == 0 {
-			err = ErrNonCanonical{reason: "non-minimal encoding length"}
+			err = errNonCanonical{reason: "non-minimal encoding length"}
 		}
 		return
 
 	case mint64:
-		err = ErrNonCanonical{reason: "unsigned value encoded as signed"}
+		err = errNonCanonical{reason: "unsigned value encoded as signed"}
 		return
 	case muint64:
 		if l < 9 {
@@ -837,7 +837,7 @@ func ReadUint64BytesCanonical(b []byte) (u uint64, o []byte, err error) {
 		u = getMuint64(b)
 		o = b[9:]
 		if (u << 32) == 0 {
-			err = ErrNonCanonical{reason: "non-minimal encoding length"}
+			err = errNonCanonical{reason: "non-minimal encoding length"}
 		}
 		return
 
@@ -1206,12 +1206,12 @@ func readBytesBytesCanonical(b []byte, scratch []byte, zc bool, flattenMap bool)
 	// go-codec compat: decode string encodings into byte arrays
 
 	if isfixstr(lead) {
-		err = ErrNonCanonical{reason: "string encoded bytes"}
+		err = errNonCanonical{reason: "string encoded bytes"}
 		return
 	} else {
 		switch lead {
 		case mstr8, mstr16, mstr32:
-			err = ErrNonCanonical{reason: "string encoded bytes"}
+			err = errNonCanonical{reason: "string encoded bytes"}
 			return
 		case mnil:
 			v = nil
@@ -1225,7 +1225,7 @@ func readBytesBytesCanonical(b []byte, scratch []byte, zc bool, flattenMap bool)
 			}
 			read = int(b[1])
 			if read == 0 {
-				err = ErrNonCanonical{reason: "non-minimal bytes encoding"}
+				err = errNonCanonical{reason: "non-minimal bytes encoding"}
 				return
 			}
 			b = b[2:]
@@ -1237,7 +1237,7 @@ func readBytesBytesCanonical(b []byte, scratch []byte, zc bool, flattenMap bool)
 			}
 			read = int(big.Uint16(b[1:]))
 			if read<<8 == 0 {
-				err = ErrNonCanonical{reason: "non-minimal bytes encoding"}
+				err = errNonCanonical{reason: "non-minimal bytes encoding"}
 				return
 			}
 			b = b[3:]
@@ -1252,7 +1252,7 @@ func readBytesBytesCanonical(b []byte, scratch []byte, zc bool, flattenMap bool)
 				return
 			}
 			if read<<16 == 0 {
-				err = ErrNonCanonical{reason: "non-minimal bytes encoding"}
+				err = errNonCanonical{reason: "non-minimal bytes encoding"}
 				return
 			}
 			b = b[5:]
@@ -1268,7 +1268,7 @@ func readBytesBytesCanonical(b []byte, scratch []byte, zc bool, flattenMap bool)
 				// If that doesn't work, return the original error code.
 				err = badPrefix(BinType, lead)
 			} else {
-				err = ErrNonCanonical{reason: "array encoded bytes"}
+				err = errNonCanonical{reason: "array encoded bytes"}
 			}
 			return
 		}

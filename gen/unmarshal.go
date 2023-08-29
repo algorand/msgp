@@ -175,7 +175,7 @@ func (u *unmarshalGen) mapstruct(s *Struct) {
 	u.assignAndCheck(sz, isnil, arrayHeader)
 
 	u.p.print("\nif validate {") // map encoded as array => non canonical
-	u.p.print("\nerr = msgp.ErrNonCanonical{reason: \"map encoded as array\"}")
+	u.p.print("\nerr = msgp.ErrNonCanonical(\"map encoded as array\")")
 	u.p.print("\nreturn")
 	u.p.print("\n}")
 
@@ -220,7 +220,7 @@ func (u *unmarshalGen) mapstruct(s *Struct) {
 		}
 		u.p.printf("\ncase \"%s\":", s.Fields[i].FieldTag)
 		u.p.printf("\nif validate && %s && \"%s\" < %s {", lastIsSet, s.Fields[i].FieldTag, last)
-		u.p.print("\nerr = msgp.ErrNonCanonical{reason: \"struct fields out of order\"}")
+		u.p.print("\nerr = msgp.ErrNonCanonical(\"struct fields out of order\")")
 		u.p.printf("\nreturn")
 		u.p.print("\n}")
 		u.ctx.PushString(s.Fields[i].FieldName)
@@ -228,7 +228,7 @@ func (u *unmarshalGen) mapstruct(s *Struct) {
 		u.ctx.Pop()
 		if ize := s.Fields[i].FieldElem.IfZeroExpr(); ize != "" && isFieldOmitEmpty(s.Fields[i], s) {
 			u.p.printf("\nif validate && %s {", ize)
-			u.p.printf("\nerr = msgp.ErrNonCanonical{reason: \"zero value for omitempty field\"}")
+			u.p.printf("\nerr = msgp.ErrNonCanonical(\"zero value for omitempty field\")")
 			u.p.printf("\nreturn")
 			u.p.printf("\n}")
 		}
@@ -240,12 +240,6 @@ func (u *unmarshalGen) mapstruct(s *Struct) {
 	u.p.printf("\n%s = true", lastIsSet)
 	u.p.print("\n}") // close for loop
 	u.p.print("\n}") // close else statement for array decode
-	u.p.print("\n if validate {")
-	u.p.print("\n if len(bts) > 0 {")
-	u.p.printf("\n err = msgp.ErrNonCanonical{reason: \"unexpected trailing bytes\"}")
-	u.p.printf("\n return")
-	u.p.print("\n }") // close if len(bts) statement
-	u.p.print("\n }") // close if validate statement
 }
 
 func (u *unmarshalGen) gBase(b *BaseElem) {
@@ -388,11 +382,11 @@ func (u *unmarshalGen) gMap(m *Map) {
 	u.p.printf("\nif validate {")
 	if m.Key.LessFunction() != "" {
 		u.p.printf("\nif %s && %s(%s, %s) {", lastSet, m.Key.LessFunction(), m.Keyidx, last)
-		u.p.printf("\nerr = msgp.ErrNonCanonical{reason: \"map keys out of order\"}")
+		u.p.printf("\nerr = msgp.ErrNonCanonical(\"map keys out of order\")")
 		u.p.printf("\nreturn")
 		u.p.printf("\n}")
 	} else {
-		u.p.printf("\nerr = &msgp.ErrMissingLessFn{}")
+		u.p.printf("\nerr = msgp.ErrMissingLessFn{}")
 		u.p.printf("\nreturn")
 	}
 	u.p.printf("\n}") // close if validate block
