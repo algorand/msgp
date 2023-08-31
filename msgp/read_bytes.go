@@ -190,6 +190,22 @@ func ReadMapKeyZC(b []byte) ([]byte, []byte, error) {
 	return o, x, nil
 }
 
+// ReadMapKeyZCCanonical attempts to read a map key
+// from 'b' and returns the key bytes and the remaining bytes
+// Possible errors:
+// - ErrShortBytes (too few bytes)
+// - TypeError{} (not a str or bin)
+func ReadMapKeyZCCanonical(b []byte) ([]byte, []byte, error) {
+	o, x, err := ReadStringZCCanonical(b)
+	if err != nil {
+		if tperr, ok := err.(TypeError); ok && tperr.Encoded == BinType {
+			return nil, b, ErrNonCanonical("map key encoded as bin instead of str")
+		}
+		return nil, b, err
+	}
+	return o, x, nil
+}
+
 // ReadArrayHeaderBytes attempts to read
 // the array header size off of 'b' and return
 // the size and remaining bytes.
@@ -1691,6 +1707,7 @@ func ReadStringZCCanonical(b []byte) (v []byte, o []byte, err error) {
 			b = b[5:]
 
 		default:
+			// still doing a go-codec compat check for a more accurate error message but this is definitely non-canonical
 			// go-codec compat: decode bin types into string
 			v, o, err = readBytesBytes(b, nil, true, false)
 			if err != nil {

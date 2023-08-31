@@ -207,7 +207,12 @@ func (u *unmarshalGen) mapstruct(s *Struct) {
 	u.p.printf("\n}")
 
 	u.p.printf("\nfor %s > 0 {", sz)
-	u.p.printf("\n%s--; field, bts, err = msgp.ReadMapKeyZC(bts)", sz)
+	u.p.printf("\n%s--", sz)
+	u.p.printf("\n if validate {")
+	u.p.printf("\nfield, bts, err = msgp.ReadMapKeyZCCanonical(bts)")
+	u.p.printf("\n} else {")
+	u.p.printf("\nfield, bts, err = msgp.ReadMapKeyZC(bts)")
+	u.p.printf("\n}")
 	u.p.wrapErrCheck(u.ctx.ArgsStr())
 	u.p.print("\nswitch string(field) {")
 	for i := range s.Fields {
