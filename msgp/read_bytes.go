@@ -435,11 +435,11 @@ func ReadInt64BytesCanonical(b []byte) (i int64, o []byte, err error) {
 		}
 		i = int64(getMint8(b))
 		o = b[2:]
-		if (i << 7) == 0 {
-			err = errNonCanonical{reason: "non-minimal encoding length"}
-		}
 		if i > 0 {
 			err = errNonCanonical{reason: "positive value encoded as signed"}
+		}
+		if i >= minFixnInt {
+			err = errNonCanonical{reason: "non-minimal encoding length"}
 		}
 		return
 	case muint8:
@@ -449,7 +449,7 @@ func ReadInt64BytesCanonical(b []byte) (i int64, o []byte, err error) {
 		}
 		i = int64(getMuint8(b))
 		o = b[2:]
-		if (i << 7) == 0 {
+		if i <= maxFixInt {
 			err = errNonCanonical{reason: "non-minimal encoding length"}
 		}
 		return
@@ -461,11 +461,11 @@ func ReadInt64BytesCanonical(b []byte) (i int64, o []byte, err error) {
 		}
 		i = int64(getMint16(b))
 		o = b[3:]
-		if (i << 8) == 0 {
-			err = errNonCanonical{reason: "non-minimal encoding length"}
-		}
 		if i > 0 {
 			err = errNonCanonical{reason: "positive value encoded as signed"}
+		}
+		if i >= math.MinInt8 {
+			err = errNonCanonical{reason: "non-minimal encoding length"}
 		}
 		return
 
@@ -475,7 +475,7 @@ func ReadInt64BytesCanonical(b []byte) (i int64, o []byte, err error) {
 			return
 		}
 		i = int64(getMuint16(b))
-		if (i << 8) == 0 {
+		if i <= math.MaxUint8 {
 			err = errNonCanonical{reason: "non-minimal encoding length"}
 		}
 		o = b[3:]
@@ -488,11 +488,11 @@ func ReadInt64BytesCanonical(b []byte) (i int64, o []byte, err error) {
 		}
 		i = int64(getMint32(b))
 		o = b[5:]
-		if (i << 16) == 0 {
-			err = errNonCanonical{reason: "non-minimal encoding length"}
-		}
 		if i > 0 {
 			err = errNonCanonical{reason: "positive value encoded as signed"}
+		}
+		if i >= math.MinInt16 {
+			err = errNonCanonical{reason: "non-minimal encoding length"}
 		}
 		return
 
@@ -503,7 +503,7 @@ func ReadInt64BytesCanonical(b []byte) (i int64, o []byte, err error) {
 		}
 		i = int64(getMuint32(b))
 		o = b[5:]
-		if (i << 16) == 0 {
+		if i <= math.MaxUint16 {
 			err = errNonCanonical{reason: "non-minimal encoding length"}
 		}
 		return
@@ -515,11 +515,11 @@ func ReadInt64BytesCanonical(b []byte) (i int64, o []byte, err error) {
 		}
 		i = int64(getMint64(b))
 		o = b[9:]
-		if (i << 32) == 0 {
-			err = errNonCanonical{reason: "non-minimal encoding length"}
-		}
 		if i > 0 {
 			err = errNonCanonical{reason: "positive value encoded as signed"}
+		}
+		if i >= math.MinInt32 {
+			err = errNonCanonical{reason: "non-minimal encoding length"}
 		}
 		return
 
@@ -538,7 +538,7 @@ func ReadInt64BytesCanonical(b []byte) (i int64, o []byte, err error) {
 		// }
 		i = int64(u)
 		o = b[9:]
-		if (i << 32) == 0 {
+		if i <= math.MaxUint32 {
 			err = errNonCanonical{reason: "non-minimal encoding length"}
 		}
 		return
@@ -790,7 +790,7 @@ func ReadUint64BytesCanonical(b []byte) (u uint64, o []byte, err error) {
 		}
 		u = uint64(getMuint8(b))
 		o = b[2:]
-		if (u << 7) == 0 {
+		if u <= maxFixInt {
 			err = errNonCanonical{reason: "non-minimal encoding length"}
 		}
 		return
@@ -806,7 +806,7 @@ func ReadUint64BytesCanonical(b []byte) (u uint64, o []byte, err error) {
 		}
 		u = uint64(getMuint16(b))
 		o = b[3:]
-		if (u << 8) == 0 {
+		if u <= math.MaxUint8 {
 			err = errNonCanonical{reason: "non-minimal encoding length"}
 		}
 		return
@@ -821,7 +821,7 @@ func ReadUint64BytesCanonical(b []byte) (u uint64, o []byte, err error) {
 		}
 		u = uint64(getMuint32(b))
 		o = b[5:]
-		if (u << 16) == 0 {
+		if u <= math.MaxUint16 {
 			err = errNonCanonical{reason: "non-minimal encoding length"}
 		}
 		return
@@ -836,7 +836,7 @@ func ReadUint64BytesCanonical(b []byte) (u uint64, o []byte, err error) {
 		}
 		u = getMuint64(b)
 		o = b[9:]
-		if (u << 32) == 0 {
+		if u <= math.MaxUint32 {
 			err = errNonCanonical{reason: "non-minimal encoding length"}
 		}
 		return

@@ -34,6 +34,9 @@ const last5 = 0x1f
 const first3 = 0xe0
 const last7 = 0x7f
 
+const minFixnInt = -32
+const maxFixInt = 127
+
 func isfixint(b byte) bool {
 	return b>>7 == 0
 }
