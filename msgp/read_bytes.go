@@ -1628,6 +1628,90 @@ func ReadStringZC(b []byte) (v []byte, o []byte, err error) {
 	return
 }
 
+// ReadStringZCCanonical reads a messagepack string field
+// without copying. The returned []byte points
+// to the same memory as the input slice.
+// The encoding must be canonical and an error is returned if it isn't.
+// Possible errors:
+// - ErrShortBytes (b not long enough)
+// - TypeError{} (object not 'str')
+// - errNonCanonical (non-minimal encoding)
+func ReadStringZCCanonical(b []byte) (v []byte, o []byte, err error) {
+	l := len(b)
+	if l < 1 {
+		return nil, nil, ErrShortBytes
+	}
+
+	lead := b[0]
+	var read int
+
+	if isfixstr(lead) {
+		read = int(rfixstr(lead))
+		b = b[1:]
+	} else {
+		switch lead {
+		case mnil:
+			read = 0
+			b = b[1:]
+
+		case mstr8:
+			if l < 2 {
+				err = ErrShortBytes
+				return
+			}
+			read = int(b[1])
+			b = b[2:]
+			if read <= maxFixStrLen {
+				err = ErrNonCanonical("non-minimal string encoding")
+			}
+
+		case mstr16:
+			if l < 3 {
+				err = ErrShortBytes
+				return
+			}
+			read = int(big.Uint16(b[1:]))
+			b = b[3:]
+			if read <= math.MaxUint8 {
+				err = ErrNonCanonical("non-minimal string encoding")
+			}
+
+		case mstr32:
+			if l < 5 {
+				err = ErrShortBytes
+				return
+			}
+			read, err = u32int(big.Uint32(b[1:]))
+			if err != nil {
+				return
+			}
+			if read <= math.MaxUint16 {
+				err = ErrNonCanonical("non-minimal string encoding")
+			}
+			b = b[5:]
+
+		default:
+			// go-codec compat: decode bin types into string
+			v, o, err = readBytesBytes(b, nil, true, false)
+			if err != nil {
+				// If the fallback fails, return original error code
+				err = TypeError{Method: StrType, Encoded: getType(lead)}
+			}
+			err = ErrNonCanonical("string type encoded as bin")
+			return
+		}
+	}
+
+	if len(b) < read {
+		err = ErrShortBytes
+		return
+	}
+
+	v = b[0:read]
+	o = b[read:]
+	return
+}
+
 // ReadStringBytes reads a 'str' object
 // from 'b' and returns its value and the
 // remaining bytes in 'b'.
@@ -1637,6 +1721,19 @@ func ReadStringZC(b []byte) (v []byte, o []byte, err error) {
 // - InvalidPrefixError
 func ReadStringBytes(b []byte) (string, []byte, error) {
 	v, o, err := ReadStringZC(b)
+	return string(v), o, err
+}
+
+// ReadStringBytesCanonical reads a 'str' object
+// from 'b' and returns its value and the
+// remaining bytes in 'b'.
+// The encoding must be canonical and an error is returned if it isn't.
+// Possible errors:
+// - ErrShortBytes (b not long enough)
+// - TypeError{} (not 'str' type)
+// - InvalidPrefixError
+func ReadStringBytesCanonical(b []byte) (string, []byte, error) {
+	v, o, err := ReadStringZCCanonical(b)
 	return string(v), o, err
 }
 

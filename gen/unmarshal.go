@@ -295,7 +295,11 @@ func (u *unmarshalGen) gBase(b *BaseElem) {
 			u.p.printf("\nreturn")
 			u.p.printf("\n}")
 		}
-		u.p.printf("\n%s, bts, err = msgp.ReadStringBytes(bts)", refname)
+		u.p.printf("\nif validate {")
+		u.p.printf("\n%s, bts, err = msgp.ReadStringBytesCanonical(bts)", refname)
+		u.p.printf("\n} else {")
+		u.p.printf("\n %s, bts, err = msgp.ReadStringBytes(bts)", refname)
+		u.p.printf("\n}")
 	case Uint, Uint8, Uint16, Uint32, Uint64, Int, Int8, Int16, Int32, Int64:
 		u.p.printf("\nif validate {")
 		u.p.printf("\n%s, bts, err = msgp.Read%sBytesCanonical(bts)", refname, b.BaseName())
