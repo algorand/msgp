@@ -190,6 +190,22 @@ func ReadMapKeyZC(b []byte) ([]byte, []byte, error) {
 	return o, x, nil
 }
 
+// ReadMapKeyZCCanonical attempts to read a map key
+// from 'b' and returns the key bytes and the remaining bytes
+// Possible errors:
+// - ErrShortBytes (too few bytes)
+// - TypeError{} (not a str or bin)
+func ReadMapKeyZCCanonical(b []byte) ([]byte, []byte, error) {
+	o, x, err := ReadStringZCCanonical(b)
+	if err != nil {
+		if tperr, ok := err.(TypeError); ok && tperr.Encoded == BinType {
+			return nil, b, ErrNonCanonical("map key encoded as bin instead of str")
+		}
+		return nil, b, err
+	}
+	return o, x, nil
+}
+
 // ReadArrayHeaderBytes attempts to read
 // the array header size off of 'b' and return
 // the size and remaining bytes.
@@ -397,6 +413,158 @@ func ReadDurationBytes(b []byte) (d time.Duration, o []byte, err error) {
 	return time.Duration(i), o, err
 }
 
+// ReadInt64BytesCanonical tries to read an int64
+// from 'b' and return the value and the remaining bytes.
+// The encoding must be canonical and an error is returned if it isn't.
+// Possible errors:
+// - ErrShortBytes (too few bytes)
+// - ErrNonCanonical (not canonical encoding)
+// - TypeError (not a int)
+func ReadInt64BytesCanonical(b []byte) (i int64, o []byte, err error) {
+	l := len(b)
+	if l < 1 {
+		return 0, nil, ErrShortBytes
+	}
+
+	lead := b[0]
+	if isfixint(lead) {
+		i = int64(rfixint(lead))
+		o = b[1:]
+		return
+	}
+	if isnfixint(lead) {
+		i = int64(rnfixint(lead))
+		o = b[1:]
+		return
+	}
+
+	switch lead {
+	case mnil:
+		i = 0
+		o = b[1:]
+		return
+
+	case mint8:
+		if l < 2 {
+			err = ErrShortBytes
+			return
+		}
+		i = int64(getMint8(b))
+		o = b[2:]
+		if i > 0 {
+			err = errNonCanonical{reason: "positive value encoded as signed"}
+		}
+		if i >= minFixnInt {
+			err = errNonCanonical{reason: "non-minimal encoding length"}
+		}
+		return
+	case muint8:
+		if l < 2 {
+			err = ErrShortBytes
+			return
+		}
+		i = int64(getMuint8(b))
+		o = b[2:]
+		if i <= maxFixInt {
+			err = errNonCanonical{reason: "non-minimal encoding length"}
+		}
+		return
+
+	case mint16:
+		if l < 3 {
+			err = ErrShortBytes
+			return
+		}
+		i = int64(getMint16(b))
+		o = b[3:]
+		if i > 0 {
+			err = errNonCanonical{reason: "positive value encoded as signed"}
+		}
+		if i >= math.MinInt8 {
+			err = errNonCanonical{reason: "non-minimal encoding length"}
+		}
+		return
+
+	case muint16:
+		if l < 3 {
+			err = ErrShortBytes
+			return
+		}
+		i = int64(getMuint16(b))
+		if i <= math.MaxUint8 {
+			err = errNonCanonical{reason: "non-minimal encoding length"}
+		}
+		o = b[3:]
+		return
+
+	case mint32:
+		if l < 5 {
+			err = ErrShortBytes
+			return
+		}
+		i = int64(getMint32(b))
+		o = b[5:]
+		if i > 0 {
+			err = errNonCanonical{reason: "positive value encoded as signed"}
+		}
+		if i >= math.MinInt16 {
+			err = errNonCanonical{reason: "non-minimal encoding length"}
+		}
+		return
+
+	case muint32:
+		if l < 5 {
+			err = ErrShortBytes
+			return
+		}
+		i = int64(getMuint32(b))
+		o = b[5:]
+		if i <= math.MaxUint16 {
+			err = errNonCanonical{reason: "non-minimal encoding length"}
+		}
+		return
+
+	case mint64:
+		if l < 9 {
+			err = ErrShortBytes
+			return
+		}
+		i = int64(getMint64(b))
+		o = b[9:]
+		if i > 0 {
+			err = errNonCanonical{reason: "positive value encoded as signed"}
+		}
+		if i >= math.MinInt32 {
+			err = errNonCanonical{reason: "non-minimal encoding length"}
+		}
+		return
+
+	case muint64:
+		if l < 9 {
+			err = ErrShortBytes
+			return
+		}
+		u := getMuint64(b)
+		// go-codec compat: uint64 encodings that exceed MaxInt64
+		// just overflow when parsed as int64.
+		//
+		// if u > math.MaxInt64 {
+		// 	err = UintOverflow{Value: u, FailedBitsize: 64}
+		// 	return
+		// }
+		i = int64(u)
+		o = b[9:]
+		if i <= math.MaxUint32 {
+			err = errNonCanonical{reason: "non-minimal encoding length"}
+		}
+		return
+
+	default:
+		err = badPrefix(IntType, lead)
+		return
+	}
+}
+
 // ReadInt64Bytes tries to read an int64
 // from 'b' and return the value and the remaining bytes.
 // Possible errors:
@@ -512,6 +680,22 @@ func ReadInt64Bytes(b []byte) (i int64, o []byte, err error) {
 	}
 }
 
+// ReadInt32BytesCanonical tries to read an int32
+// from 'b' and return the value and the remaining bytes.
+// The encoding must be canonical and an error is returned if it isn't.
+// Possible errors:
+// - ErrShortBytes (too few bytes)
+// - TypeError{} (not a int)
+// - ErrNonCanonical (not canonical encoding)
+// - IntOverflow{} (value doesn't fit in int32)
+func ReadInt32BytesCanonical(b []byte) (int32, []byte, error) {
+	i, o, err := ReadInt64BytesCanonical(b)
+	if i > math.MaxInt32 || i < math.MinInt32 {
+		return 0, o, IntOverflow{Value: i, FailedBitsize: 32}
+	}
+	return int32(i), o, err
+}
+
 // ReadInt32Bytes tries to read an int32
 // from 'b' and return the value and the remaining bytes.
 // Possible errors:
@@ -524,6 +708,22 @@ func ReadInt32Bytes(b []byte) (int32, []byte, error) {
 		return 0, o, IntOverflow{Value: i, FailedBitsize: 32}
 	}
 	return int32(i), o, err
+}
+
+// ReadInt16BytesCanonical tries to read an int16
+// from 'b' and return the value and the remaining bytes.
+// The encoding must be canonical and an error is returned if it isn't.
+// Possible errors:
+// - ErrShortBytes (too few bytes)
+// - TypeError{} (not a int)
+// - ErrNonCanonical (not canonical encoding)
+// - IntOverflow{} (value doesn't fit in int16)
+func ReadInt16BytesCanonical(b []byte) (int16, []byte, error) {
+	i, o, err := ReadInt64BytesCanonical(b)
+	if i > math.MaxInt16 || i < math.MinInt16 {
+		return 0, o, IntOverflow{Value: i, FailedBitsize: 16}
+	}
+	return int16(i), o, err
 }
 
 // ReadInt16Bytes tries to read an int16
@@ -540,6 +740,22 @@ func ReadInt16Bytes(b []byte) (int16, []byte, error) {
 	return int16(i), o, err
 }
 
+// ReadInt8BytesCanonical tries to read an int16
+// from 'b' and return the value and the remaining bytes.
+// The encoding must be canonical and an error is returned if it isn't.
+// Possible errors:
+// - ErrShortBytes (too few bytes)
+// - TypeError{} (not a int)
+// - ErrNonCanonical (not canonical encoding)
+// - IntOverflow{} (value doesn't fit in int16)
+func ReadInt8BytesCanonical(b []byte) (int8, []byte, error) {
+	i, o, err := ReadInt64BytesCanonical(b)
+	if i > math.MaxInt8 || i < math.MinInt8 {
+		return 0, o, IntOverflow{Value: i, FailedBitsize: 8}
+	}
+	return int8(i), o, err
+}
+
 // ReadInt8Bytes tries to read an int16
 // from 'b' and return the value and the remaining bytes.
 // Possible errors:
@@ -552,6 +768,103 @@ func ReadInt8Bytes(b []byte) (int8, []byte, error) {
 		return 0, o, IntOverflow{Value: i, FailedBitsize: 8}
 	}
 	return int8(i), o, err
+}
+
+// ReadUint64BytesCanonical tries to read a uint64
+// from 'b' and return the value and the remaining bytes.
+// Encoding must be canonical and an error is returned if it isn't.
+// Possible errors:
+// - ErrShortBytes (too few bytes)
+// - ErrNonCanonical (not canonical encoding)
+// - TypeError{} (not a uint)
+func ReadUint64BytesCanonical(b []byte) (u uint64, o []byte, err error) {
+	l := len(b)
+	if l < 1 {
+		return 0, nil, ErrShortBytes
+	}
+
+	lead := b[0]
+	if isfixint(lead) {
+		u = uint64(rfixint(lead))
+		o = b[1:]
+		return
+	}
+
+	switch lead {
+	case mnil:
+		u = 0
+		o = b[1:]
+		return
+
+	case mint8:
+		err = errNonCanonical{reason: "unsigned value encoded as signed"}
+		return
+	case muint8:
+		if l < 2 {
+			err = ErrShortBytes
+			return
+		}
+		u = uint64(getMuint8(b))
+		o = b[2:]
+		if u <= maxFixInt {
+			err = errNonCanonical{reason: "non-minimal encoding length"}
+		}
+		return
+
+	case mint16:
+		err = errNonCanonical{reason: "unsigned value encoded as signed"}
+		return
+
+	case muint16:
+		if l < 3 {
+			err = ErrShortBytes
+			return
+		}
+		u = uint64(getMuint16(b))
+		o = b[3:]
+		if u <= math.MaxUint8 {
+			err = errNonCanonical{reason: "non-minimal encoding length"}
+		}
+		return
+
+	case mint32:
+		err = errNonCanonical{reason: "unsigned value encoded as signed"}
+		return
+	case muint32:
+		if l < 5 {
+			err = ErrShortBytes
+			return
+		}
+		u = uint64(getMuint32(b))
+		o = b[5:]
+		if u <= math.MaxUint16 {
+			err = errNonCanonical{reason: "non-minimal encoding length"}
+		}
+		return
+
+	case mint64:
+		err = errNonCanonical{reason: "unsigned value encoded as signed"}
+		return
+	case muint64:
+		if l < 9 {
+			err = ErrShortBytes
+			return
+		}
+		u = getMuint64(b)
+		o = b[9:]
+		if u <= math.MaxUint32 {
+			err = errNonCanonical{reason: "non-minimal encoding length"}
+		}
+		return
+
+	default:
+		if isnfixint(lead) {
+			err = UintBelowZero{Value: int64(rnfixint(lead))}
+		} else {
+			err = badPrefix(UintType, lead)
+		}
+		return
+	}
 }
 
 // ReadUint64Bytes tries to read a uint64
@@ -680,6 +993,22 @@ func ReadUint64Bytes(b []byte) (u uint64, o []byte, err error) {
 	}
 }
 
+// ReadUint32BytesCanonical tries to read a uint32
+// from 'b' and return the value and the remaining bytes.
+// Encoding must be canonical and an error is returned if it isn't.
+// Possible errors:
+// - ErrShortBytes (too few bytes)
+// - TypeError{} (not a uint)
+// - ErrNonCanonical (not canonical encoding)
+// - UintOverflow{} (value too large for uint32)
+func ReadUint32BytesCanonical(b []byte) (uint32, []byte, error) {
+	v, o, err := ReadUint64BytesCanonical(b)
+	if v > math.MaxUint32 {
+		return 0, nil, UintOverflow{Value: v, FailedBitsize: 32}
+	}
+	return uint32(v), o, err
+}
+
 // ReadUint32Bytes tries to read a uint32
 // from 'b' and return the value and the remaining bytes.
 // Possible errors:
@@ -694,6 +1023,22 @@ func ReadUint32Bytes(b []byte) (uint32, []byte, error) {
 	return uint32(v), o, err
 }
 
+// ReadUint16BytesCanonical tries to read a uint32
+// from 'b' and return the value and the remaining bytes.
+// Encoding must be canonical and an error is returned if it isn't.
+// Possible errors:
+// - ErrShortBytes (too few bytes)
+// - TypeError{} (not a uint)
+// - ErrNonCanonical (not canonical encoding)
+// - UintOverflow{} (value too large for uint32)
+func ReadUint16BytesCanonical(b []byte) (uint16, []byte, error) {
+	v, o, err := ReadUint64BytesCanonical(b)
+	if v > math.MaxUint16 {
+		return 0, nil, UintOverflow{Value: v, FailedBitsize: 16}
+	}
+	return uint16(v), o, err
+}
+
 // ReadUint16Bytes tries to read a uint16
 // from 'b' and return the value and the remaining bytes.
 // Possible errors:
@@ -706,6 +1051,22 @@ func ReadUint16Bytes(b []byte) (uint16, []byte, error) {
 		return 0, nil, UintOverflow{Value: v, FailedBitsize: 16}
 	}
 	return uint16(v), o, err
+}
+
+// ReadUint8BytesCanonical tries to read a uint32
+// from 'b' and return the value and the remaining bytes.
+// Encoding must be canonical and an error is returned if it isn't.
+// Possible errors:
+// - ErrShortBytes (too few bytes)
+// - TypeError{} (not a uint)
+// - ErrNonCanonical (not canonical encoding)
+// - UintOverflow{} (value too large for uint32)
+func ReadUint8BytesCanonical(b []byte) (uint8, []byte, error) {
+	v, o, err := ReadUint64BytesCanonical(b)
+	if v > math.MaxUint8 {
+		return 0, nil, UintOverflow{Value: v, FailedBitsize: 8}
+	}
+	return uint8(v), o, err
 }
 
 // ReadUint8Bytes tries to read a uint8
@@ -725,6 +1086,16 @@ func ReadUint8Bytes(b []byte) (uint8, []byte, error) {
 // ReadByteBytes is analogous to ReadUint8Bytes
 func ReadByteBytes(b []byte) (byte, []byte, error) {
 	return ReadUint8Bytes(b)
+}
+
+// ReadBytesBytes reads a 'bin' object
+// from 'b' and returns its value and
+// the remaining bytes in 'b'.
+// Possible errors:
+// - ErrShortBytes (too few bytes)
+// - TypeError{} (not a 'bin' object)
+func ReadBytesBytesCanonical(b []byte, scratch []byte) (v []byte, o []byte, err error) {
+	return readBytesBytesCanonical(b, scratch, false, true)
 }
 
 // ReadBytesBytes reads a 'bin' object
@@ -837,6 +1208,110 @@ func ReadBytesBytesHeader(b []byte) (sz int, err error) {
 		sz, _, _, err = readArrayHeaderBytes(b, true)
 		return
 	}
+}
+
+func readBytesBytesCanonical(b []byte, scratch []byte, zc bool, flattenMap bool) (v []byte, o []byte, err error) {
+	l := len(b)
+	if l < 1 {
+		return nil, nil, ErrShortBytes
+	}
+
+	lead := b[0]
+	var read int
+
+	// go-codec compat: decode string encodings into byte arrays
+
+	if isfixstr(lead) {
+		err = errNonCanonical{reason: "string encoded bytes"}
+		return
+	} else {
+		switch lead {
+		case mstr8, mstr16, mstr32:
+			err = errNonCanonical{reason: "string encoded bytes"}
+			return
+		case mnil:
+			v = nil
+			o = b[1:]
+			return
+
+		case mbin8:
+			if l < 2 {
+				err = ErrShortBytes
+				return
+			}
+			read = int(b[1])
+			if read == 0 {
+				err = errNonCanonical{reason: "non-minimal bytes encoding"}
+				return
+			}
+			b = b[2:]
+
+		case mbin16:
+			if l < 3 {
+				err = ErrShortBytes
+				return
+			}
+			read = int(big.Uint16(b[1:]))
+			if read<<8 == 0 {
+				err = errNonCanonical{reason: "non-minimal bytes encoding"}
+				return
+			}
+			b = b[3:]
+
+		case mbin32:
+			if l < 5 {
+				err = ErrShortBytes
+				return
+			}
+			read, err = u32int(big.Uint32(b[1:]))
+			if err != nil {
+				return
+			}
+			if read<<16 == 0 {
+				err = errNonCanonical{reason: "non-minimal bytes encoding"}
+				return
+			}
+			b = b[5:]
+
+		default:
+			// IF not bin encoded it's either non-canonical or bad encoding. We still try to read it to provide a more meaningful error message
+
+			// go-codec compat: decode into byte array/slice from
+			// explicit array encodings (including the weird case
+			// of decoding a map as a key-value interleaved array).
+			v, o, err = readBytesBytesSlow(b, flattenMap)
+			if err != nil {
+				// If that doesn't work, return the original error code.
+				err = badPrefix(BinType, lead)
+			} else {
+				err = errNonCanonical{reason: "array encoded bytes"}
+			}
+			return
+		}
+	}
+
+	if len(b) < read {
+		err = ErrShortBytes
+		return
+	}
+
+	// zero-copy
+	if zc {
+		v = b[0:read]
+		o = b[read:]
+		return
+	}
+
+	// The "scratch != nil" check is to match go-codec behavior:
+	// decode zero-length byte slices as a non-nil byte slice.
+	if scratch != nil && cap(scratch) >= read {
+		v = scratch[0:read]
+	} else {
+		v = make([]byte, read)
+	}
+
+	o = b[copy(v, b):]
+	return
 }
 
 func readBytesBytes(b []byte, scratch []byte, zc bool, flattenMap bool) (v []byte, o []byte, err error) {
@@ -1169,6 +1644,91 @@ func ReadStringZC(b []byte) (v []byte, o []byte, err error) {
 	return
 }
 
+// ReadStringZCCanonical reads a messagepack string field
+// without copying. The returned []byte points
+// to the same memory as the input slice.
+// The encoding must be canonical and an error is returned if it isn't.
+// Possible errors:
+// - ErrShortBytes (b not long enough)
+// - TypeError{} (object not 'str')
+// - errNonCanonical (non-minimal encoding)
+func ReadStringZCCanonical(b []byte) (v []byte, o []byte, err error) {
+	l := len(b)
+	if l < 1 {
+		return nil, nil, ErrShortBytes
+	}
+
+	lead := b[0]
+	var read int
+
+	if isfixstr(lead) {
+		read = int(rfixstr(lead))
+		b = b[1:]
+	} else {
+		switch lead {
+		case mnil:
+			read = 0
+			b = b[1:]
+
+		case mstr8:
+			if l < 2 {
+				err = ErrShortBytes
+				return
+			}
+			read = int(b[1])
+			b = b[2:]
+			if read <= maxFixStrLen {
+				err = ErrNonCanonical("non-minimal string encoding")
+			}
+
+		case mstr16:
+			if l < 3 {
+				err = ErrShortBytes
+				return
+			}
+			read = int(big.Uint16(b[1:]))
+			b = b[3:]
+			if read <= math.MaxUint8 {
+				err = ErrNonCanonical("non-minimal string encoding")
+			}
+
+		case mstr32:
+			if l < 5 {
+				err = ErrShortBytes
+				return
+			}
+			read, err = u32int(big.Uint32(b[1:]))
+			if err != nil {
+				return
+			}
+			if read <= math.MaxUint16 {
+				err = ErrNonCanonical("non-minimal string encoding")
+			}
+			b = b[5:]
+
+		default:
+			// still doing a go-codec compat check for a more accurate error message but this is definitely non-canonical
+			// go-codec compat: decode bin types into string
+			v, o, err = readBytesBytes(b, nil, true, false)
+			if err != nil {
+				// If the fallback fails, return original error code
+				err = TypeError{Method: StrType, Encoded: getType(lead)}
+			}
+			err = ErrNonCanonical("string type encoded as bin")
+			return
+		}
+	}
+
+	if len(b) < read {
+		err = ErrShortBytes
+		return
+	}
+
+	v = b[0:read]
+	o = b[read:]
+	return
+}
+
 // ReadStringBytes reads a 'str' object
 // from 'b' and returns its value and the
 // remaining bytes in 'b'.
@@ -1181,11 +1741,24 @@ func ReadStringBytes(b []byte) (string, []byte, error) {
 	return string(v), o, err
 }
 
+// ReadStringBytesCanonical reads a 'str' object
+// from 'b' and returns its value and the
+// remaining bytes in 'b'.
+// The encoding must be canonical and an error is returned if it isn't.
+// Possible errors:
+// - ErrShortBytes (b not long enough)
+// - TypeError{} (not 'str' type)
+// - InvalidPrefixError
+func ReadStringBytesCanonical(b []byte) (string, []byte, error) {
+	v, o, err := ReadStringZCCanonical(b)
+	return string(v), o, err
+}
+
 // ReadStringAsBytes reads a 'str' object
 // into a slice of bytes. 'v' is the value of
 // the 'str' object, which may reside in memory
 // pointed to by 'scratch.' 'o' is the remaining bytes
-// in 'b.''
+// in 'b.'
 // Possible errors:
 // - ErrShortBytes (b not long enough)
 // - TypeError{} (not 'str' type)
