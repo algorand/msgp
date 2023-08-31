@@ -226,11 +226,18 @@ func (u *unmarshalGen) mapstruct(s *Struct) {
 		u.ctx.PushString(s.Fields[i].FieldName)
 		next(u, s.Fields[i].FieldElem)
 		u.ctx.Pop()
-		if ize := s.Fields[i].FieldElem.IfZeroExpr(); ize != "" && isFieldOmitEmpty(s.Fields[i], s) {
-			u.p.printf("\nif validate && %s {", ize)
-			u.p.printf("\nerr = msgp.ErrNonCanonical(\"zero value for omitempty field\")")
-			u.p.printf("\nreturn")
-			u.p.printf("\n}")
+		if isFieldOmitEmpty(s.Fields[i], s) {
+			u.p.printf("\nif validate {")
+			if ize := s.Fields[i].FieldElem.IfZeroExpr(); ize != "" {
+				u.p.printf("\nif %s {", ize)
+				u.p.printf("\nerr = msgp.ErrNonCanonical(\"zero value for omitempty field\")")
+				u.p.printf("\nreturn")
+				u.p.printf("\n}") // close if ize
+			} else {
+				u.p.printf("\nerr = msgp.ErrMissingZeroExpr(\"%s\")", s.Fields[i].FieldElem.TypeName())
+				u.p.printf("\nreturn")
+			}
+			u.p.printf("\n}") // close if validate
 		}
 		u.p.printf("\n%s = \"%s\"", last, s.Fields[i].FieldTag)
 	}
@@ -386,7 +393,7 @@ func (u *unmarshalGen) gMap(m *Map) {
 		u.p.printf("\nreturn")
 		u.p.printf("\n}")
 	} else {
-		u.p.printf("\nerr = msgp.ErrMissingLessFn{}")
+		u.p.printf("\nerr = msgp.ErrMissingLessFn(\"%s\")", m.Key.TypeName())
 		u.p.printf("\nreturn")
 	}
 	u.p.printf("\n}") // close if validate block

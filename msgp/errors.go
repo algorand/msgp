@@ -359,19 +359,44 @@ func (e errNonCanonical) Error() string {
 // Resumable returns false for errNonCanonical
 func (e errNonCanonical) Resumable() bool { return false }
 
-// ErrNonCanonical is returned
+func ErrNonCanonical(reason string) error {
+	return errNonCanonical{reason}
+}
+
+// errMissingLessFn is returned
 // when unmarshaller detects that
-// the message is not canonically encoded (pre-sorted)
-type ErrMissingLessFn struct{}
+// the LessFunc is not provided for the type and the canonicity cannot be validated
+type errMissingLessFn struct {
+	typeName string
+}
 
 // Error implements error
-func (e ErrMissingLessFn) Error() string {
+func (e errMissingLessFn) Error() string {
 	return fmt.Sprintf("msgp: can't validate canonicity: missing LessFn")
 }
 
 // Resumable returns false for errNonCanonical
-func (e ErrMissingLessFn) Resumable() bool { return false }
+func (e errMissingLessFn) Resumable() bool { return false }
 
-func ErrNonCanonical(reason string) error {
-	return errNonCanonical{reason}
+func ErrMissingLessFn(typeName string) error {
+	return errMissingLessFn{typeName}
+}
+
+// errMissingZeroExpr is returned
+// when unmarshaller detects that
+// the message is not canonically encoded (pre-sorted)
+type errMissingZeroExpr struct {
+	typeName string
+}
+
+// Error implements error
+func (e errMissingZeroExpr) Error() string {
+	return fmt.Sprintf("msgp: can't validate canonicity: missing LessFn")
+}
+
+// Resumable returns false for errNonCanonical
+func (e errMissingZeroExpr) Resumable() bool { return false }
+
+func ErrMissingZeroExpr(typeName string) error {
+	return errMissingZeroExpr{typeName}
 }
