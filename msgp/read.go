@@ -80,11 +80,3 @@ type Unmarshaler interface {
 	UnmarshalMsg([]byte) ([]byte, error)
 	CanUnmarshalMsg(o interface{}) bool
 }
-
-// UnmarshalerValidator extends the Unmarshaler interface
-// and requires an additional UnmarshalValidateMsg method
-// that checks whether the encoded bytes follow canonical encoding rules
-type UnmarshalerValidator interface {
-	Unmarshaler
-	UnmarshalValidateMsg([]byte) ([]byte, error)
-}

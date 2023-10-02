@@ -5,19 +5,16 @@
 // generator implement the Marshaler/Unmarshaler and Encodable/Decodable interfaces.
 //
 // This package defines four "families" of functions:
-//   - AppendXxxx() appends an object to a []byte in MessagePack encoding.
-//   - ReadXxxxBytes() reads an object from a []byte and returns the remaining bytes.
-//   - (*Writer).WriteXxxx() writes an object to the buffered *Writer type.
-//   - (*Reader).ReadXxxx() reads an object from a buffered *Reader type.
+// 	- AppendXxxx() appends an object to a []byte in MessagePack encoding.
+// 	- ReadXxxxBytes() reads an object from a []byte and returns the remaining bytes.
+// 	- (*Writer).WriteXxxx() writes an object to the buffered *Writer type.
+// 	- (*Reader).ReadXxxx() reads an object from a buffered *Reader type.
 //
 // Once a type has satisfied the `Encodable` and `Decodable` interfaces,
 // it can be written and read from arbitrary `io.Writer`s and `io.Reader`s using
-//
-//	msgp.Encode(io.Writer, msgp.Encodable)
-//
+// 		msgp.Encode(io.Writer, msgp.Encodable)
 // and
-//
-//	msgp.Decode(io.Reader, msgp.Decodable)
+//		msgp.Decode(io.Reader, msgp.Decodable)
 //
 // There are also methods for converting MessagePack to JSON without
 // an explicit de-serialization step.
@@ -25,8 +22,6 @@
 // For additional tips, tricks, and gotchas, please visit
 // the wiki at http://github.com/tinylib/msgp
 package msgp
-
-import "bytes"
 
 const last4 = 0x0f
 const first4 = 0xf0
@@ -145,62 +140,3 @@ const (
 	mmap16    uint8 = 0xde
 	mmap32    uint8 = 0xdf
 )
-
-// The following section defines exported LessFns for built-in types to be used as a convenience
-// when using the msgp:sort directive.
-
-func IntLess(a, b int) bool {
-	return a < b
-}
-
-func Int8Less(a, b int8) bool {
-	return a < b
-}
-
-func Int16Less(a, b int16) bool {
-	return a < b
-}
-
-func Int32Less(a, b int32) bool {
-	return a < b
-}
-
-func Int64Less(a, b int64) bool {
-	return a < b
-}
-
-func UintLess(a, b uint) bool {
-	return a < b
-}
-
-func Uint8Less(a, b uint8) bool {
-	return a < b
-}
-
-func Uint16Less(a, b uint16) bool {
-	return a < b
-}
-
-func Uint32Less(a, b uint32) bool {
-	return a < b
-}
-
-func Uint64Less(a, b uint64) bool {
-	return a < b
-}
-
-func Float32Less(a, b float32) bool {
-	return a < b
-}
-
-func Float64Less(a, b float64) bool {
-	return a < b
-}
-
-func BytesLess(a, b []byte) bool {
-	return bytes.Compare(a, b) < 0
-}
-
-func StringLess(a, b string) bool {
-	return a < b
-}
