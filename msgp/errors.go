@@ -81,10 +81,9 @@ func Resumable(e error) bool {
 //
 // ErrShortBytes is not wrapped with any context due to backward compatibility
 // issues with the public API.
-//
 func WrapError(err error, ctx ...interface{}) error {
 	switch e := err.(type) {
-	case errShort:
+	case errShort, ErrMaxDepthExceeded:
 		return e
 	case contextError:
 		return e.withContext(ctxString(ctx))
@@ -344,3 +343,12 @@ func (e *ErrUnsupportedType) withContext(ctx string) error {
 	o.ctx = addCtx(o.ctx, ctx)
 	return &o
 }
+
+// ErrMaxDepthExceeded is returned if the maximum traversal depth is exceeded.
+type ErrMaxDepthExceeded struct{}
+
+// Error implements error
+func (e ErrMaxDepthExceeded) Error() string { return "Max depth exceeded" }
+
+// Resumable implements Error
+func (e ErrMaxDepthExceeded) Resumable() bool { return false }

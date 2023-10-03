@@ -78,5 +78,14 @@ func (t Type) String() string {
 // field in a struct rather than unmarshaling the entire struct.
 type Unmarshaler interface {
 	UnmarshalMsg([]byte) ([]byte, error)
+	UnmarshalMsgWithState([]byte, UnmarshalState) ([]byte, error)
 	CanUnmarshalMsg(o interface{}) bool
 }
+
+// UnmarshalState holds state while running UnmarshalMsg.
+type UnmarshalState struct {
+	AllowableDepth uint64
+}
+
+// DefaultUnmarshalState defines the default state.
+var DefaultUnmarshalState = UnmarshalState{AllowableDepth: 10000}

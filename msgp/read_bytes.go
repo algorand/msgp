@@ -87,6 +87,16 @@ func (*Raw) CanUnmarshalMsg(z interface{}) bool {
 // It sets the contents of *Raw to be the next
 // object in the provided byte slice.
 func (r *Raw) UnmarshalMsg(b []byte) ([]byte, error) {
+	return r.UnmarshalMsgWithState(b, DefaultUnmarshalState)
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler.
+// It sets the contents of *Raw to be the next
+// object in the provided byte slice.
+func (r *Raw) UnmarshalMsgWithState(b []byte, st UnmarshalState) ([]byte, error) {
+	if st.AllowableDepth == 0 {
+		return nil, ErrMaxDepthExceeded{}
+	}
 	l := len(b)
 	out, err := Skip(b)
 	if err != nil {
@@ -1185,7 +1195,7 @@ func ReadStringBytes(b []byte) (string, []byte, error) {
 // into a slice of bytes. 'v' is the value of
 // the 'str' object, which may reside in memory
 // pointed to by 'scratch.' 'o' is the remaining bytes
-// in 'b.''
+// in 'b'.
 // Possible errors:
 // - ErrShortBytes (b not long enough)
 // - TypeError{} (not 'str' type)

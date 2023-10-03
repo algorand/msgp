@@ -60,12 +60,17 @@ func (u *unmarshalGen) Execute(p Elem) ([]string, error) {
 		u.p.printf("\n  return ((*(%s))(%s)).UnmarshalMsg(bts)", baseType, c)
 		u.p.printf("\n}")
 
+		u.p.printf("\nfunc (%s %s) UnmarshalMsgWithState(bts []byte, st msgp.UnmarshalState) ([]byte, error) {", c, methodRecv)
+		u.p.printf("\n  return ((*(%s))(%s)).UnmarshalMsgWithState(bts, st)", baseType, c)
+		u.p.printf("\n}")
+
 		u.p.printf("\nfunc (_ %[2]s) CanUnmarshalMsg(%[1]s interface{}) bool {", c, methodRecv)
 		u.p.printf("\n  _, ok := (%s).(%s)", c, methodRecv)
 		u.p.printf("\n  return ok")
 		u.p.printf("\n}")
 
 		u.topics.Add(methodRecv, "UnmarshalMsg")
+		u.topics.Add(methodRecv, "UnmarshalMsgWithState")
 		u.topics.Add(methodRecv, "CanUnmarshalMsg")
 
 		return u.msgs, u.p.err
@@ -75,7 +80,12 @@ func (u *unmarshalGen) Execute(p Elem) ([]string, error) {
 	c := p.Varname()
 	methodRecv := methodReceiver(p)
 
-	u.p.printf("\nfunc (%s %s) UnmarshalMsg(bts []byte) (o []byte, err error) {", c, methodRecv)
+	u.p.printf("\nfunc (%s %s) UnmarshalMsgWithState(bts []byte, st msgp.UnmarshalState) (o []byte, err error) {", c, methodRecv)
+	u.p.printf("\n  if st.Depth == 0 {")
+	u.p.printf("\n    err = msgp.ErrMaxDepthExceeded{}")
+	u.p.printf("\n    return")
+	u.p.printf("\n  }")
+	u.p.printf("\n  st.Depth--")
 	next(u, p)
 	u.p.print("\no = bts")
 
@@ -91,12 +101,17 @@ func (u *unmarshalGen) Execute(p Elem) ([]string, error) {
 	}
 	u.p.nakedReturn()
 
+	u.p.printf("\nfunc (%s %s) UnmarshalMsg(bts []byte) (o []byte, err error) {", c, methodRecv)
+	u.p.printf("\n return %s.UnmarshalMsgWithState(bts, msgp.DefaultUnmarshalState)", c)
+	u.p.printf("\n}")
+
 	u.p.printf("\nfunc (_ %[2]s) CanUnmarshalMsg(%[1]s interface{}) bool {", c, methodRecv)
 	u.p.printf("\n  _, ok := (%s).(%s)", c, methodRecv)
 	u.p.printf("\n  return ok")
 	u.p.printf("\n}")
 
 	u.topics.Add(methodRecv, "UnmarshalMsg")
+	u.topics.Add(methodRecv, "UnmarshalMsgWithState")
 	u.topics.Add(methodRecv, "CanUnmarshalMsg")
 
 	return u.msgs, u.p.err
@@ -236,7 +251,7 @@ func (u *unmarshalGen) gBase(b *BaseElem) {
 	case Ext:
 		u.p.printf("\nbts, err = msgp.ReadExtensionBytes(bts, %s)", lowered)
 	case IDENT:
-		u.p.printf("\nbts, err = %s.UnmarshalMsg(bts)", lowered)
+		u.p.printf("\nbts, err = %s.UnmarshalMsgWithState(bts, st)", lowered)
 	case String:
 		if b.common.AllocBound() != "" {
 			sz := randIdent()
