@@ -81,11 +81,11 @@ func (u *unmarshalGen) Execute(p Elem) ([]string, error) {
 	methodRecv := methodReceiver(p)
 
 	u.p.printf("\nfunc (%s %s) UnmarshalMsgWithState(bts []byte, st msgp.UnmarshalState) (o []byte, err error) {", c, methodRecv)
-	u.p.printf("\n  if st.Depth == 0 {")
+	u.p.printf("\n  if st.AllowableDepth == 0 {")
 	u.p.printf("\n    err = msgp.ErrMaxDepthExceeded{}")
 	u.p.printf("\n    return")
 	u.p.printf("\n  }")
-	u.p.printf("\n  st.Depth--")
+	u.p.printf("\n  st.AllowableDepth--")
 	next(u, p)
 	u.p.print("\no = bts")
 
