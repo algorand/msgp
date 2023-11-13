@@ -3,14 +3,15 @@ package printer
 import (
 	"bytes"
 	"fmt"
+	"github.com/daixiang0/gci/pkg/config"
+	"github.com/daixiang0/gci/pkg/section"
 	"io"
 	"io/ioutil"
 	"strings"
 
 	"github.com/algorand/msgp/gen"
 	"github.com/algorand/msgp/parse"
-	"github.com/daixiang0/gci/pkg/gci"
-	"github.com/daixiang0/gci/pkg/gci/sections"
+	gciP "github.com/daixiang0/gci/pkg/gci"
 	"github.com/ttacon/chalk"
 	"golang.org/x/tools/imports"
 )
@@ -63,14 +64,19 @@ func format(file string, data []byte, skipFormat bool) error {
 		return err
 	}
 	// then run through gci to arrange import order
-	if err := gci.WriteFormattedFiles([]string{file}, gci.GciConfiguration{
-		Sections: gci.SectionList{
-			sections.StandardPackage{},
-			sections.DefaultSection{},
-			sections.Prefix{ImportPrefix: "github.com/algorand"},
-			sections.Prefix{ImportPrefix: "github.com/algorand/go-algorand"},
+	// add custom sections
+	if err := gciP.WriteFormattedFiles([]string{file}, config.Config{
+		Sections: section.SectionList{
+			section.Standard{},
+			section.Default{},
+			section.Custom{
+				Prefix: "github.com/algorand",
+			},
+			section.Custom{
+				Prefix: "github.com/algorand/go-algorand",
+			},
 		},
-		SectionSeparators: gci.SectionList{sections.NewLine{}},
+		SectionSeparators: section.SectionList{section.NewLine{}},
 	}); err != nil {
 		return err
 	}
