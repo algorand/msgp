@@ -112,7 +112,13 @@ func (s *maxSizeGen) Execute(p Elem) ([]string, error) {
 	s.p.printf("\nfunc  %s (s int) {", getMaxSizeMethod(p.TypeName()))
 	s.state = assignM
 	next(s, p)
-	s.p.nakedReturn()
+	if s.halted {
+		if s.p.ok() {
+			s.p.print("\n}\n")
+		}
+	} else {
+		s.p.nakedReturn()
+	}
 	s.topics.Add(p.TypeName(), getMaxSizeMethod(p.TypeName()))
 	return nil, s.p.err
 }
