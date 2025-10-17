@@ -42,6 +42,7 @@ type maxSizeGen struct {
 	state  maxSizeState
 	ctx    *Context
 	topics *Topics
+	halted bool
 }
 
 func (s *maxSizeGen) Method() Method { return MaxSize }
@@ -53,7 +54,7 @@ func (s *maxSizeGen) Apply(dirs []string) error {
 // this lets us chain together addition
 // operations where possible
 func (s *maxSizeGen) addConstant(sz string) {
-	if !s.p.ok() {
+	if !s.p.ok() || s.halted {
 		return
 	}
 
@@ -105,6 +106,8 @@ func (s *maxSizeGen) Execute(p Elem) ([]string, error) {
 	s.ctx = &Context{}
 	s.ctx.PushString(p.TypeName())
 
+	s.halted = false
+
 	// receiver := imutMethodReceiver(p)
 	s.p.printf("\nfunc  %s (s int) {", getMaxSizeMethod(p.TypeName()))
 	s.state = assignM
@@ -114,8 +117,17 @@ func (s *maxSizeGen) Execute(p Elem) ([]string, error) {
 	return nil, s.p.err
 }
 
+func (s *maxSizeGen) panicf(format string, args ...interface{}) {
+	if !s.p.ok() || s.halted {
+		return
+	}
+	s.state = addM
+	s.p.printf("\npanic(%s)", strconv.Quote(fmt.Sprintf(format, args...)))
+	s.halted = true
+}
+
 func (s *maxSizeGen) gStruct(st *Struct) {
-	if !s.p.ok() {
+	if !s.p.ok() || s.halted {
 		return
 	}
 
@@ -138,6 +150,9 @@ func (s *maxSizeGen) gStruct(st *Struct) {
 				return
 			}
 			next(s, st.Fields[i].FieldElem)
+			if s.halted {
+				return
+			}
 		}
 	} else {
 		data := msgp.AppendMapHeader(nil, nfields)
@@ -151,25 +166,33 @@ func (s *maxSizeGen) gStruct(st *Struct) {
 			data = msgp.AppendString(data, st.Fields[i].FieldTag)
 			s.addConstant(strconv.Itoa(len(data)))
 			next(s, st.Fields[i].FieldElem)
+			if s.halted {
+				return
+			}
 		}
 	}
 }
 
 func (s *maxSizeGen) gPtr(p *Ptr) {
+	if !s.p.ok() || s.halted {
+		return
+	}
 	s.state = addM // inner must use add
 	next(s, p.Value)
+	if s.halted {
+		return
+	}
 	s.state = addM // closing block; reset to add
 }
 
 func (s *maxSizeGen) gSlice(sl *Slice) {
-	if !s.p.ok() {
+	if !s.p.ok() || s.halted {
 		return
 	}
 	s.state = addM
 	s.p.comment("Calculating size of slice: " + sl.Varname())
 	if (sl.AllocBound() == "" || sl.AllocBound() == "-") && (sl.MaxTotalBytes() == "" || sl.MaxTotalBytes() == "-") {
-		s.p.printf("\npanic(\"Slice %s is unbounded\")", sl.Varname())
-		s.state = addM // reset the add to prevent further + expressions from being added to the end the panic statement
+		s.panicf("Slice %s is unbounded", sl.Varname())
 		return
 	}
 
@@ -193,14 +216,14 @@ func (s *maxSizeGen) gSlice(sl *Slice) {
 	if str, err := maxSizeExpr(childElement); err == nil {
 		s.addConstant(fmt.Sprintf("((%s) * (%s))", topLevelAllocBound, str))
 	} else {
-		s.p.printf("\npanic(\"Unable to determine max size: %s\")", err)
+		s.panicf("Unable to determine max size: %v", err)
 	}
 	s.state = addM
 	return
 }
 
 func (s *maxSizeGen) gArray(a *Array) {
-	if !s.p.ok() {
+	if !s.p.ok() || s.halted {
 		return
 	}
 	// If this is not the first line where we define s = ... then we need to reset the state
@@ -215,7 +238,7 @@ func (s *maxSizeGen) gArray(a *Array) {
 	if str, err := maxSizeExpr(a.Els); err == nil {
 		s.addConstant(fmt.Sprintf("((%s) * (%s))", a.Size, str))
 	} else {
-		s.p.printf("\npanic(\"Unable to determine max size: %s\")", err)
+		s.panicf("Unable to determine max size: %v", err)
 
 	}
 	s.state = addM
@@ -223,13 +246,15 @@ func (s *maxSizeGen) gArray(a *Array) {
 }
 
 func (s *maxSizeGen) gMap(m *Map) {
+	if !s.p.ok() || s.halted {
+		return
+	}
 	vn := m.Varname()
 	s.state = addM
 	s.addConstant(builtinSize(mapHeader))
 	topLevelAllocBound := m.AllocBound()
 	if topLevelAllocBound != "" && topLevelAllocBound == "-" {
-		s.p.printf("\npanic(\"Map %s is unbounded\")", m.Varname())
-		s.state = addM // reset the add to prevent further + expressions from being added to the end the panic statement
+		s.panicf("Map %s is unbounded", m.Varname())
 		return
 	}
 	splitBounds := strings.Split(m.AllocBound(), ",")
@@ -245,17 +270,23 @@ func (s *maxSizeGen) gMap(m *Map) {
 	s.p.printf("\ns += %s", topLevelAllocBound)
 	s.state = multM
 	next(s, m.Key)
+	if s.halted {
+		return
+	}
 
 	s.p.comment("Adding size of map values for " + vn)
 	s.p.printf("\ns += %s", topLevelAllocBound)
 	s.state = multM
 	next(s, m.Value)
+	if s.halted {
+		return
+	}
 
 	s.state = addM
 }
 
 func (s *maxSizeGen) gBase(b *BaseElem) {
-	if !s.p.ok() {
+	if !s.p.ok() || s.halted {
 		return
 	}
 	if b.MaxTotalBytes() != "" {
@@ -275,8 +306,7 @@ func (s *maxSizeGen) gBase(b *BaseElem) {
 
 		value, err := baseMaxSizeExpr(b.Value, vname, b.BaseName(), b.TypeName(), b.common.AllocBound())
 		if err != nil {
-			s.p.printf("\npanic(\"Unable to determine max size: %s\")", err)
-			s.state = addM // reset the add to prevent further + expressions from being added to the end the panic statement
+			s.panicf("Unable to determine max size: %v", err)
 			return
 		}
 		s.p.printf("\ns += %s", value)
@@ -289,8 +319,7 @@ func (s *maxSizeGen) gBase(b *BaseElem) {
 		}
 		value, err := baseMaxSizeExpr(b.Value, vname, b.BaseName(), b.TypeName(), b.common.AllocBound())
 		if err != nil {
-			s.p.printf("\npanic(\"Unable to determine max size: %s\")", err)
-			s.state = addM // reset the add to prevent further + expressions from being added to the end the panic statement
+			s.panicf("Unable to determine max size: %v", err)
 			return
 		}
 		s.addConstant(value)
