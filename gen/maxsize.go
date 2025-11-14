@@ -92,10 +92,9 @@ func (s *maxSizeGen) Execute(p Elem) ([]string, error) {
 	// to not affect other code that will use p.
 	p = p.Copy()
 
-	s.p.comment("MaxSize returns a maximum valid message size for this message type")
-
 	if IsDangling(p) {
 		baseType := p.(*BaseElem).IdentName
+		s.p.comment(strings.TrimSuffix(getMaxSizeMethod(baseType), "()") + " returns a maximum valid message size for this message type")
 		s.p.printf("\nfunc %s int{", getMaxSizeMethod(p.TypeName()))
 		s.p.printf("\n  return %s", getMaxSizeMethod(baseType))
 		s.p.printf("\n}")
@@ -109,6 +108,7 @@ func (s *maxSizeGen) Execute(p Elem) ([]string, error) {
 	s.halted = false
 
 	// receiver := imutMethodReceiver(p)
+	s.p.comment(strings.TrimSuffix(getMaxSizeMethod(p.TypeName()), "()") + " returns a maximum valid message size for this message type")
 	s.p.printf("\nfunc  %s (s int) {", getMaxSizeMethod(p.TypeName()))
 	s.state = assignM
 	next(s, p)
