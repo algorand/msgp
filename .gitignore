@@ -11,3 +11,8 @@ msgp/cover.out
 .idea/
 .vscode/
 cover.out
+.DS_Store
+
+# locally built msgp binaries
+msgp-bin
+msgp/msgp
