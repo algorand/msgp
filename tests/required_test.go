@@ -1,16 +1,26 @@
 package tests
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/algorand/msgp/msgp"
 )
 
-// requiredCause returns the underlying ErrMissingRequiredField field name, or
-// "" if err is not (a wrapped) ErrMissingRequiredField.
+// requiredCause reports the codec tag of the missing required field reported by
+// err, or ("", false) if err is not a missing-required-field error. The
+// generated decoder reports these as a plain wrapped error (no dedicated msgp
+// type), so we match on the stable message prefix.
 func requiredCause(err error) (string, bool) {
-	e, ok := msgp.Cause(err).(msgp.ErrMissingRequiredField)
-	return string(e), ok
+	const prefix = "missing required field: "
+	if err == nil {
+		return "", false
+	}
+	msg := msgp.Cause(err).Error()
+	if !strings.HasPrefix(msg, prefix) {
+		return "", false
+	}
+	return strings.TrimPrefix(msg, prefix), true
 }
 
 func TestRequiredMapDecodes(t *testing.T) {

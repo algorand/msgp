@@ -3,6 +3,8 @@
 package tests
 
 import (
+	"errors"
+
 	"github.com/algorand/msgp/msgp"
 )
 
@@ -263,7 +265,7 @@ func (z *CompositeRequired) UnmarshalMsgWithState(bts []byte, st msgp.UnmarshalS
 		}
 	}
 	if (*z).Nested.X == "" {
-		err = msgp.ErrMissingRequiredField("nested")
+		err = errors.New("missing required field: nested")
 		if err != nil {
 			err = msgp.WrapError(err)
 			return
@@ -550,14 +552,14 @@ func (z *MapRequired) UnmarshalMsgWithState(bts []byte, st msgp.UnmarshalState) 
 		}
 	}
 	if (*z).ReqPlain == "" {
-		err = msgp.ErrMissingRequiredField("reqplain")
+		err = errors.New("missing required field: reqplain")
 		if err != nil {
 			err = msgp.WrapError(err)
 			return
 		}
 	}
 	if (*z).ReqOmit == 0 {
-		err = msgp.ErrMissingRequiredField("reqomit")
+		err = errors.New("missing required field: reqomit")
 		if err != nil {
 			err = msgp.WrapError(err)
 			return
@@ -707,7 +709,7 @@ func (z *MapRequiredOmitEmpty) UnmarshalMsgWithState(bts []byte, st msgp.Unmarsh
 		}
 	}
 	if (*z).Req == "" {
-		err = msgp.ErrMissingRequiredField("req")
+		err = errors.New("missing required field: req")
 		if err != nil {
 			err = msgp.WrapError(err)
 			return
@@ -788,7 +790,7 @@ func (z *TupleRequired) UnmarshalMsgWithState(bts []byte, st msgp.UnmarshalState
 		return
 	}
 	if (*z).A == "" {
-		err = msgp.ErrMissingRequiredField("a")
+		err = errors.New("missing required field: a")
 		if err != nil {
 			err = msgp.WrapError(err)
 			return

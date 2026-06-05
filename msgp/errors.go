@@ -31,17 +31,6 @@ func (e ErrTooManyArrayFields) Error() string {
 	return fmt.Sprintf("Too many array fields when decoding into struct: %d left", int(e))
 }
 
-// ErrMissingRequiredField is returned when a struct field tagged with the
-// `required` codec option holds its zero value after decoding. This happens
-// either because the field was absent from the encoded object (e.g. the
-// encoder dropped it due to omitempty) or because it was explicitly encoded
-// as a zero value. The string is the field's codec tag name.
-type ErrMissingRequiredField string
-
-func (e ErrMissingRequiredField) Error() string {
-	return fmt.Sprintf("missing required field: %s", string(e))
-}
-
 // Error is the interface satisfied
 // by all of the errors that originate
 // from this package.

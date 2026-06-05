@@ -170,8 +170,14 @@ func (u *unmarshalGen) required(s *Struct) {
 			u.msgs = append(u.msgs, fmt.Sprintf("Cannot enforce `required` on field %s of %s: type has no zero-value comparison", s.Fields[i].FieldName, s.TypeName()))
 			continue
 		}
+		// Use a plain errors.New rather than a dedicated msgp error type so the
+		// generated code depends only on symbols that already exist in the msgp
+		// library: a project can pick up `required` by updating the generator
+		// alone, without bumping its msgp library version. goimports adds the
+		// "errors" import to the generated file. The %q formats the message as a
+		// properly escaped Go string literal.
 		u.p.printf("\nif %s {", ize)
-		u.p.printf("\nerr = msgp.ErrMissingRequiredField(%q)", s.Fields[i].FieldTag)
+		u.p.printf("\nerr = errors.New(%q)", "missing required field: "+s.Fields[i].FieldTag)
 		u.p.wrapErrCheck(u.ctx.ArgsStr())
 		u.p.printf("\n}")
 	}
