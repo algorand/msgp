@@ -124,6 +124,7 @@ var primitives = map[string]Primitive{
 	"int64":          Int64,
 	"bool":           Bool,
 	"interface{}":    Intf,
+	"any":            Intf, // builtin alias for interface{} (Go 1.18+)
 	"time.Time":      Time,
 	"msgp.Extension": Ext,
 	"error":          Error,

@@ -3,7 +3,7 @@
 // decoding (whether the field was absent from the wire or encoded as zero).
 package tests
 
-//go:generate msgp -tests=false
+//go:generate msgp
 
 //msgp:tuple TupleRequired
 
