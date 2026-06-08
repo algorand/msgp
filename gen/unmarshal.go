@@ -1,6 +1,7 @@
 package gen
 
 import (
+	"fmt"
 	"go/ast"
 	"io"
 	"strconv"
@@ -135,7 +136,51 @@ func (u *unmarshalGen) gStruct(s *Struct) {
 	} else {
 		u.mapstruct(s)
 	}
+	u.required(s)
 	return
+}
+
+// required emits, for every exported field tagged with the `required` codec
+// option, a check that the field holds a non-zero value after decoding. A
+// required field that is still zero (because it was absent from the encoded
+// object, or encoded as a zero value) is a decode error. This runs after the
+// struct body has been decoded, so it applies uniformly to the map,
+// struct-from-array, and tuple decode paths.
+func (u *unmarshalGen) required(s *Struct) {
+	for i := range s.Fields {
+		if !u.p.ok() {
+			return
+		}
+		if !ast.IsExported(s.Fields[i].FieldName) {
+			continue
+		}
+		if !s.Fields[i].HasTagPart("required") {
+			continue
+		}
+		ize := s.Fields[i].FieldElem.IfZeroExpr()
+		if ize == "" {
+			// The check needs a zero-value comparison. Every named type has
+			// one (IfZeroExpr falls back to its generated MsgIsZero), so this
+			// only happens for an inline anonymous struct, which has no zero
+			// comparison and no MsgIsZero method. Unlike MsgIsZero (which can
+			// default to "true"), required has no safe fallback: defaulting to
+			// "always zero" would reject every value and make the type
+			// undecodable. Fail generation instead. PrintTo treats any recorded
+			// message as fatal.
+			u.msgs = append(u.msgs, fmt.Sprintf("Cannot enforce `required` on field %s of %s: type has no zero-value comparison", s.Fields[i].FieldName, s.TypeName()))
+			continue
+		}
+		// Use a plain errors.New rather than a dedicated msgp error type so the
+		// generated code depends only on symbols that already exist in the msgp
+		// library: a project can pick up `required` by updating the generator
+		// alone, without bumping its msgp library version. goimports adds the
+		// "errors" import to the generated file. The %q formats the message as a
+		// properly escaped Go string literal.
+		u.p.printf("\nif %s {", ize)
+		u.p.printf("\nerr = errors.New(%q)", "missing required field: "+s.Fields[i].FieldTag)
+		u.p.wrapErrCheck(u.ctx.ArgsStr())
+		u.p.printf("\n}")
+	}
 }
 
 func (u *unmarshalGen) tuple(s *Struct) {
