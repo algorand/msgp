@@ -355,6 +355,15 @@ func (fs *FileSet) getTypeSpecs(f *ast.File) {
 							continue
 						}
 
+						// `type X any` declares an empty interface just like
+						// `type X interface{}`; no methods can be generated
+						// for an interface type, so classify it with the
+						// interfaces rather than the generatable specs
+						if id, ok := s.Type.(*ast.Ident); ok && id.Name == "any" {
+							fs.Interfaces[s.Name.Name] = s.Type
+							continue
+						}
+
 						if s.Assign == 0 {
 							fs.Specs[s.Name.Name] = s.Type
 						} else {
