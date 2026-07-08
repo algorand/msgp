@@ -144,8 +144,8 @@ func (u *unmarshalGen) gStruct(s *Struct) {
 // option, a check that the field holds a non-zero value after decoding. A
 // required field that is still zero (because it was absent from the encoded
 // object, or encoded as a zero value) is a decode error. This runs after the
-// struct body has been decoded, so it applies uniformly to the map,
-// struct-from-array, and tuple decode paths.
+// struct body has been decoded, so it applies uniformly to the map and tuple
+// decode paths.
 func (u *unmarshalGen) required(s *Struct) {
 	for i := range s.Fields {
 		if !u.p.ok() {
@@ -207,36 +207,8 @@ func (u *unmarshalGen) mapstruct(s *Struct) {
 	u.p.declare(sz, "int")
 	u.p.declare(isnil, "bool")
 
-	// go-codec compat: decode an array as sequential elements from this struct,
-	// in the order they are defined in the Go type (as opposed to canonical
-	// order by sorted tag).
-	u.p.printf("\n%s, %s, bts, err = msgp.Read%sBytes(bts)", sz, isnil, mapHeader)
-	u.p.printf("\nif _, ok := err.(msgp.TypeError); ok {")
-
-	u.assignAndCheck(sz, isnil, arrayHeader)
-
-	u.ctx.PushString("struct-from-array")
-	for i := range s.Fields {
-		if !ast.IsExported(s.Fields[i].FieldName) {
-			continue
-		}
-
-		u.p.printf("\nif %s > 0 {", sz)
-		u.p.printf("\n%s--", sz)
-		u.ctx.PushString(s.Fields[i].FieldName)
-		next(u, s.Fields[i].FieldElem)
-		u.ctx.Pop()
-		u.p.printf("\n}")
-	}
-
-	u.p.printf("\nif %s > 0 {", sz)
-	u.p.printf("\nerr = msgp.ErrTooManyArrayFields(%s)", sz)
-	u.p.wrapErrCheck(u.ctx.ArgsStr())
-	u.p.printf("\n}")
-	u.ctx.Pop()
-
-	u.p.printf("\n} else {")
-	u.p.wrapErrCheck(u.ctx.ArgsStr())
+	// Decode the struct as a msgpack map only
+	u.assignAndCheck(sz, isnil, mapHeader)
 
 	u.p.printf("\nif %s {", isnil)
 	u.p.printf("\n  %s = %s{}", s.Varname(), s.TypeName())
@@ -263,7 +235,6 @@ func (u *unmarshalGen) mapstruct(s *Struct) {
 	u.p.wrapErrCheck(u.ctx.ArgsStr())
 	u.p.print("\n}") // close switch
 	u.p.print("\n}") // close for loop
-	u.p.print("\n}") // close else statement for array decode
 }
 
 func (u *unmarshalGen) gBase(b *BaseElem) {
