@@ -3,6 +3,7 @@ package parse
 import (
 	"fmt"
 	"go/ast"
+	"go/types"
 	"reflect"
 	"sort"
 	"strings"
@@ -42,7 +43,7 @@ func File(name string, unexported bool, warnPkgMask string) (*FileSet, error) {
 	defer popstate()
 
 	cfg := &packages.Config{
-		Mode: packages.NeedName | packages.NeedImports | packages.NeedDeps | packages.NeedSyntax | packages.NeedFiles | packages.NeedExportsFile | packages.NeedTypesInfo,
+		Mode: packages.LoadAllSyntax,
 	}
 
 	pkgs, err := packages.Load(cfg, name)
@@ -123,7 +124,7 @@ func packageToFileSet(p *packages.Package, imps map[string]*FileSet, unexported 
 			fs.ImportName[importname] = pkgpath
 		}
 
-		fs.getTypeSpecs(fl)
+		fs.getTypeSpecs(fl, p.TypesInfo)
 		popstate()
 	}
 
@@ -323,7 +324,7 @@ func (f *FileSet) PrintTo(p *gen.Printer) error {
 
 // getTypeSpecs extracts all of the *ast.TypeSpecs in the file
 // into fs.Identities, but does not set the actual element
-func (fs *FileSet) getTypeSpecs(f *ast.File) {
+func (fs *FileSet) getTypeSpecs(f *ast.File, typeInfo *types.Info) {
 
 	// collect all imports...
 	fs.Imports = append(fs.Imports, f.Imports...)
@@ -340,6 +341,15 @@ func (fs *FileSet) getTypeSpecs(f *ast.File) {
 				// for ast.TypeSpecs....
 				switch s := s.(type) {
 				case *ast.TypeSpec:
+					if typeInfo != nil {
+						if typ := typeInfo.TypeOf(s.Type); typ != nil {
+							if _, ok := typ.Underlying().(*types.Interface); ok {
+								fs.Interfaces[s.Name.Name] = s.Type
+								continue
+							}
+						}
+					}
+
 					switch s.Type.(type) {
 
 					// this is the list of parse-able
@@ -352,15 +362,6 @@ func (fs *FileSet) getTypeSpecs(f *ast.File) {
 						*ast.Ident:
 
 						if strings.HasPrefix(s.Name.Name, "_Ctype_") || s.Name.Name == "_" {
-							continue
-						}
-
-						// `type X any` declares an empty interface just like
-						// `type X interface{}`; no methods can be generated
-						// for an interface type, so classify it with the
-						// interfaces rather than the generatable specs
-						if id, ok := s.Type.(*ast.Ident); ok && id.Name == "any" {
-							fs.Interfaces[s.Name.Name] = s.Type
 							continue
 						}
 
