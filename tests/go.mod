@@ -6,7 +6,7 @@
 // dependency. Run these tests with: cd tests && go test ./...
 module github.com/algorand/msgp/tests
 
-go 1.23
+go 1.25.0
 
 require (
 	github.com/algorand/go-algorand v0.0.0-00010101000000-000000000000
