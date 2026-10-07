@@ -22,11 +22,12 @@ type passDirective func(gen.Method, []string, *gen.Printer) error
 // to add a directive, define a func([]string, *FileSet) error
 // and then add it to this list.
 var directives = map[string]directive{
-	"shim":       applyShim,
-	"ignore":     ignore,
-	"tuple":      astuple,
-	"sort":       sortintf,
-	"allocbound": allocbound,
+	"shim":          applyShim,
+	"ignore":        ignore,
+	"tuple":         astuple,
+	"sort":          sortintf,
+	"allocbound":    allocbound,
+	"maxtotalbytes": maxtotalbytes,
 	// _postunmarshalcheck is used to add callbacks to the end of un-marshalling that are tied to a specific Element.
 	_postunmarshalcheck: postunmarshalcheck,
 }
@@ -189,6 +190,30 @@ func allocbound(text []string, f *FileSet) error {
 	} else {
 		t.SetAllocBound(allocBound)
 		infof("allocbound(%s): setting to %s\n", allocBoundType, allocBound)
+	}
+	return nil
+}
+
+// maxtotalbytes is the type-level counterpart of the maxtotalbytes= field tag,
+// for named slice types that have no field to carry the tag. As with the tag,
+// Bound replaces the generated MaxSize for the slice's contents, so it must
+// include each element's msgp prefix. Directives are split on spaces, so the
+// rest of the line is rejoined to allow Bound to be an expression like
+// "(N*msgp.BytesPrefixSize) + M".
+//
+//msgp:maxtotalbytes {Type} {Bound}
+func maxtotalbytes(text []string, f *FileSet) error {
+	if len(text) < 3 {
+		return fmt.Errorf("maxtotalbytes directive should have 2 arguments; found %d", len(text)-1)
+	}
+	maxTotalBytesType := strings.TrimSpace(text[1])
+	maxTotalBytes := strings.TrimSpace(strings.Join(text[2:], " "))
+	t, ok := f.Identities[maxTotalBytesType]
+	if !ok {
+		warnf("maxtotalbytes: cannot find type %s\n", maxTotalBytesType)
+	} else {
+		t.SetMaxTotalBytes(maxTotalBytes)
+		infof("maxtotalbytes(%s): setting to %s\n", maxTotalBytesType, maxTotalBytes)
 	}
 	return nil
 }
