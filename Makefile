@@ -11,7 +11,7 @@ SHELL := /bin/bash
 
 BIN = $(GOBIN)/msgp
 
-.PHONY: clean wipe install get-deps bench all
+.PHONY: clean wipe install get-deps bench all test-gen
 
 $(BIN): */*.go
 	@go install ./...
@@ -24,6 +24,14 @@ $(MGEN): ./msgp/defs_test.go
 test: all
 	go test -covermode=atomic -coverprofile=cover.out ./...
 	cd tests && go test ./...
+
+# Regenerate tests/*_gen*.go with the msgp built from this tree, rather than
+# whatever msgp happens to be on PATH. CI runs this and fails on any diff.
+test-gen:
+	@bindir=$$(mktemp -d) && \
+	go build -o "$$bindir/msgp" . && \
+	(cd tests && PATH="$$bindir:$$PATH" go generate ./...); \
+	status=$$?; rm -rf "$$bindir"; exit $$status
 
 bench: all
 	go test -bench ./...
